@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<title>今天 · EInkPush</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --faint: #86868b;
+    --line: #e5e5ea;
+    --accent: #0071e3;
+    --accent-hover: #0077ed;
+    --err: #d70015;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --container: 1040px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+      "PingFang SC", "Helvetica Neue", "Microsoft YaHei", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  button, input, select { font: inherit; }
+  :focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.3); }
+
+  .shell-nav { position: sticky; top: 0; z-index: 30; background: rgba(255,255,255,0.86);
+    backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(0,0,0,0.06); }
+  .shell-inner { max-width: 1040px; margin: 0 auto; padding: 0 24px; height: 56px;
+    display: flex; align-items: center; gap: 12px; }
+  .shell-brand { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; color: var(--text); text-decoration: none; }
+  .shell-brand:hover { text-decoration: none; }
+  .shell-tabs { margin-left: auto; display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(0,0,0,0.05); }
+  .shell-tab { padding: 7px 16px; border-radius: 999px; color: var(--muted); font-size: 14px; text-decoration: none;
+    transition: color 0.25s var(--ease), background-color 0.25s var(--ease); }
+  .shell-tab:hover { color: var(--text); text-decoration: none; }
+  .shell-tab[aria-current="page"] { background: #fff; color: var(--text); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  @media (max-width: 560px) {
+    .shell-inner { padding: 0 14px; gap: 8px; }
+    .shell-brand { font-size: 17px; }
+    .shell-tab { padding: 6px 12px; font-size: 13px; }
+  }
+
+  .page-head { max-width: var(--container); margin: 0 auto; padding: 88px 24px 48px; text-align: center; position: relative; }
+  .back-link {
+    position: absolute; top: 24px; left: 24px;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 14px; color: var(--muted); text-decoration: none;
+    transition: color 0.15s ease;
+  }
+  .back-link:hover { color: var(--text); }
+  .page-head h1 { margin: 0 0 18px; font-size: clamp(40px, 6vw, 64px); line-height: 1.06;
+    font-weight: 600; letter-spacing: -0.03em; }
+  .page-head p { max-width: 600px; margin: 0 auto; color: var(--muted); font-size: 18px; line-height: 1.55; }
+
+  main { max-width: var(--container); margin: 0 auto; padding: 0 24px 72px;
+    display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+    gap: 20px; align-items: start; }
+  .card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 32px; }
+  .card-head { margin-bottom: 18px; }
+  .card-head h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+  .card-head p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+
+  .preview { padding: 12px; border-radius: var(--radius-md); background: var(--bg); }
+  .preview img { display: block; width: 100%; height: auto; border-radius: 8px; background: #fff; }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 46px;
+    padding: 0 26px; border: 0; border-radius: 999px; font-size: 16px; font-weight: 500;
+    text-decoration: none; cursor: pointer;
+    transition: background-color 0.2s var(--ease), color 0.2s var(--ease),
+      transform 0.2s var(--ease), box-shadow 0.2s var(--ease); }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary { background: var(--bg); color: var(--text); }
+  .btn-secondary:hover { background: #ebebef; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  .switch { display: inline-flex; align-items: center; gap: 12px; margin-top: 26px;
+    color: var(--muted); font-size: 14px; cursor: pointer; user-select: none; }
+  .switch input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .switch-track { position: relative; width: 42px; height: 26px; border-radius: 999px;
+    background: #d2d2d7; flex: none; transition: background-color 0.2s var(--ease); }
+  .switch-thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s var(--ease); }
+  .switch input:checked + .switch-track { background: var(--accent); }
+  .switch input:checked + .switch-track .switch-thumb { transform: translateX(16px); }
+  .switch input:focus-visible + .switch-track { box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.3); }
+
+  .hint { margin: 16px 0 0; min-height: 20px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+  .hint.err { color: var(--err); }
+
+  .form { display: grid; gap: 14px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field { display: grid; gap: 6px; }
+  .field span { color: var(--muted); font-size: 13px; }
+  .field input, .field select {
+    width: 100%; padding: 11px 13px; border: 1px solid var(--line); border-radius: 12px;
+    background: var(--bg); color: var(--text); font-size: 14px;
+    transition: border-color 0.2s var(--ease), background-color 0.2s var(--ease); }
+  .field input:focus, .field select:focus { background: #fff; border-color: var(--accent); }
+  .field input::placeholder { color: #a1a1a6; }
+  .field code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+
+  footer { max-width: var(--container); margin: 0 auto; padding: 56px 24px 80px;
+    color: var(--faint); font-size: 13px; line-height: 1.8; text-align: center; }
+  footer strong { color: var(--muted); font-weight: 500; }
+
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  @media (max-width: 720px) {
+    .page-head { padding: 64px 20px 40px; }
+    main { padding: 0 20px 56px; }
+    .card { padding: 26px 22px; }
+    .grid2 { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    .btn:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<nav class="shell-nav">
+  <div class="shell-inner">
+    <a class="shell-brand" href="/">EInkPush</a>
+    <div class="shell-tabs">
+      <a class="shell-tab" href="/">首页</a>
+      <a class="shell-tab" href="/device">设备</a>
+      <a class="shell-tab" href="/apps" aria-current="page">应用</a>
+    </div>
+  </div>
+</nav>
+
+<header class="page-head">
+  <a class="back-link" href="/apps">← 应用列表</a>
+  <h1>今天</h1>
+  <p>天气、月历与历史上的今天。每天定时生成一张 400 × 300 的卡片，也可以随时手动推送。</p>
+</header>
+
+<main>
+  <section class="card">
+    <div class="card-head">
+      <h2>设备画面</h2>
+      <p>天气与穿搭在左，月历与「历史上的今天」在右</p>
+    </div>
+    <div class="preview">
+      <img id="shot" alt="今天在墨水屏上的预览">
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" id="pushBtn">推送到设备</button>
+      <button class="btn btn-secondary" id="reload">重新生成</button>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="tmr">
+      <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+      <span>预览明天</span>
+    </label>
+    <p class="hint" id="msg" aria-live="polite">首次生成需要联网取数，约 1～3 秒。</p>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>配置</h2>
+      <p>地点、推送时间与设备位深</p>
+    </div>
+    <div class="form">
+      <div class="grid2">
+        <label class="field"><span>地点名称</span><input type="text" id="label" maxlength="20" placeholder="杭州"></label>
+        <label class="field"><span>时区</span><input type="text" id="tz" placeholder="Asia/Shanghai"></label>
+        <label class="field"><span>纬度</span><input type="text" id="lat" placeholder="30.27"></label>
+        <label class="field"><span>经度</span><input type="text" id="lon" placeholder="120.16"></label>
+      </div>
+      <div class="grid2">
+        <label class="field"><span>cron 表达式</span><input type="text" id="cron" placeholder="0 7 * * *"></label>
+        <label class="field"><span>推送位深</span>
+          <select id="format">
+            <option value="gray16">gray16 十六灰（推荐）</option>
+            <option value="gray4">gray4 四灰</option>
+            <option value="mono">mono 黑白</option>
+          </select>
+        </label>
+      </div>
+      <label class="field"><span>和风天气 Key（可选）</span>
+        <input type="text" id="qweatherKey" maxlength="64" placeholder="留空则用免费的 Open-Meteo">
+      </label>
+      <label class="field"><span>和风 API Host</span>
+        <input type="text" id="qweatherHost" maxlength="120" placeholder="留空 = devapi.qweather.com">
+      </label>
+      <div class="actions" style="margin-top:4px">
+        <button class="btn btn-primary" id="saveBtn">保存配置</button>
+        <button class="btn btn-secondary" id="geoBtn">按城市查坐标</button>
+      </div>
+      <label class="switch" style="margin-top:4px">
+        <input type="checkbox" id="enabled">
+        <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+        <span>启用定时推送</span>
+      </label>
+    </div>
+    <p class="hint">cron 用 5 段式，例如 <code>0 7 * * *</code> 表示每天 7:00（按上面的时区）。只改城市名保存时会自动重新解析经纬度。</p>
+  </section>
+</main>
+
+<footer>
+  <strong>EInkPush</strong> · 今天<br>
+  月历与节气由本地历法计算 · 历史上的今天来自百度百科
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const API = '/apps/today';
+
+function setMessage(text, isError) {
+  const el = $('msg');
+  el.textContent = text;
+  el.className = 'hint' + (isError ? ' err' : '');
+}
+
+function refreshShot() {
+  const tomorrow = $('tmr').checked ? '1' : '0';
+  $('shot').src = `${API}/api/preview.png?tomorrow=${tomorrow}&t=${Date.now()}`;
+}
+
+async function loadConfig() {
+  try {
+    const r = await fetch(API + '/api/config');
+    const data = await r.json();
+    if (!data.ok || !data.config) throw new Error(data.error || `HTTP ${r.status}`);
+    const config = data.config;
+    $('label').value = config.location.label;
+    $('tz').value = config.location.timezone;
+    $('lat').value = config.location.lat;
+    $('lon').value = config.location.lon;
+    $('cron').value = config.cron;
+    $('format').value = config.format;
+    $('enabled').checked = config.enabled;
+    $('qweatherKey').value = config.qweatherKey ?? '';
+    $('qweatherHost').value = config.qweatherHost ?? '';
+    if (data.lastPush) {
+      setMessage(`上次推送：${data.lastPush.date}${data.lastPush.tomorrow ? '（明日）' : ''} · ${data.lastPush.bytes}B · ${data.lastPush.ms}ms · ${data.lastPush.trigger}`);
+    }
+    if (data.lastError) setMessage('最近一次告警：' + data.lastError, true);
+  } catch (err) {
+    setMessage('读取配置失败：' + err.message, true);
+  }
+  refreshShot();
+}
+
+$('shot').addEventListener('error', () => setMessage('预览生成失败：请检查服务日志（数据源或中文字体）', true));
+$('tmr').addEventListener('change', refreshShot);
+$('reload').addEventListener('click', () => {
+  setMessage('正在重新生成预览…');
+  $('shot').addEventListener('load', () => setMessage('预览已更新'), { once: true });
+  refreshShot();
+});
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshShot(); });
+
+$('pushBtn').addEventListener('click', async () => {
+  $('pushBtn').disabled = true;
+  setMessage('正在生成并推送…');
+  try {
+    const r = await fetch(API + '/api/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tomorrow: $('tmr').checked }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    setMessage(`推送成功：${data.bytes}B，${data.ms}ms（设备已确认显示完成）`);
+    refreshShot();
+  } catch (err) {
+    setMessage('推送失败：' + err.message, true);
+  } finally {
+    $('pushBtn').disabled = false;
+  }
+});
+
+$('geoBtn').addEventListener('click', async () => {
+  const name = $('label').value.trim();
+  if (!name) { setMessage('请先填写城市名称', true); return; }
+  $('geoBtn').disabled = true;
+  setMessage(`正在查询「${name}」的坐标…`);
+  try {
+    const r = await fetch(`${API}/api/geocode?name=${encodeURIComponent(name)}`);
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    $('label').value = data.location.label;
+    $('lat').value = data.location.lat;
+    $('lon').value = data.location.lon;
+    $('tz').value = data.location.timezone;
+    setMessage(`已定位：${data.location.label}（${data.location.lat}, ${data.location.lon}）`);
+  } catch (err) {
+    setMessage('查询失败：' + err.message, true);
+  } finally {
+    $('geoBtn').disabled = false;
+  }
+});
+
+$('saveBtn').addEventListener('click', async () => {
+  $('saveBtn').disabled = true;
+  setMessage('正在保存…');
+  try {
+    const body = {
+      location: {
+        label: $('label').value.trim(),
+        lat: Number($('lat').value),
+        lon: Number($('lon').value),
+        timezone: $('tz').value.trim() || 'Asia/Shanghai',
+      },
+      cron: $('cron').value.trim(),
+      format: $('format').value,
+      enabled: $('enabled').checked,
+      qweatherKey: $('qweatherKey').value.trim(),
+      qweatherHost: $('qweatherHost').value.trim(),
+    };
+    const r = await fetch(API + '/api/config', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    setMessage('配置已保存，新的预览正在生成…');
+    refreshShot();
+  } catch (err) {
+    setMessage('保存失败：' + err.message, true);
+  } finally {
+    $('saveBtn').disabled = false;
+  }
+});
+
+loadConfig();
+</script>
+</body>
+</html>

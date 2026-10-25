@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<title>人生指南 · EInkPush</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --faint: #86868b;
+    --line: #e5e5ea;
+    --accent: #0071e3;
+    --accent-hover: #0077ed;
+    --err: #d70015;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --container: 980px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+      "PingFang SC", "Helvetica Neue", "Microsoft YaHei", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  button, select { font: inherit; }
+  :focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.3); }
+
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(255, 255, 255, 0.86);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  .nav-inner {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+  .brand {
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .brand:hover { text-decoration: none; }
+  .nav-links { flex: 1; display: flex; gap: 24px; font-size: 14px; }
+  .nav-links a { color: var(--muted); }
+  .nav-links a:hover { color: var(--text); text-decoration: none; }
+  /* 统一导航：tab 形式，当前页高亮 */
+  .shell-nav { position: sticky; top: 0; z-index: 30; background: rgba(255,255,255,0.86);
+    backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(0,0,0,0.06); }
+  .shell-inner { max-width: 1040px; margin: 0 auto; padding: 0 24px; height: 56px;
+    display: flex; align-items: center; gap: 12px; }
+  .shell-brand { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; color: var(--text); text-decoration: none; }
+  .shell-brand:hover { text-decoration: none; }
+  .shell-tabs { margin-left: auto; display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(0,0,0,0.05); }
+  .shell-tab { padding: 7px 16px; border-radius: 999px; color: var(--muted); font-size: 14px; text-decoration: none;
+    transition: color 0.25s var(--ease), background-color 0.25s var(--ease); }
+  .shell-tab:hover { color: var(--text); text-decoration: none; }
+  .shell-tab[aria-current="page"] { background: #fff; color: var(--text); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  @media (max-width: 560px) {
+    .shell-inner { padding: 0 14px; gap: 8px; }
+    .shell-brand { font-size: 17px; }
+    .shell-tab { padding: 6px 12px; font-size: 13px; }
+  }
+
+  .page-head {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 88px 24px 48px;
+    text-align: center;
+    position: relative;
+  }
+  .back-link {
+    position: absolute; top: 24px; left: 24px;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 14px; color: var(--muted); text-decoration: none;
+    transition: color 0.15s ease;
+  }
+  .back-link:hover { color: var(--text); }
+  .page-head h1 {
+    margin: 0 0 18px;
+    font-size: clamp(40px, 6vw, 64px);
+    line-height: 1.06;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+  .page-head p {
+    max-width: 580px;
+    margin: 0 auto;
+    color: var(--muted);
+    font-size: 18px;
+    line-height: 1.55;
+  }
+
+  main {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 24px 72px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: 20px;
+    align-items: start;
+  }
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 32px;
+  }
+  .card-head { margin-bottom: 18px; }
+  .card-head h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .card-head p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(0, 113, 227, 0.08);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .counter { margin-left: auto; color: var(--faint); font-size: 13px; }
+
+  .title {
+    margin: 22px 0 14px;
+    font-size: clamp(26px, 3.4vw, 34px);
+    line-height: 1.25;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+  }
+  .title.is-new { animation: item-in 0.45s var(--ease); }
+  @keyframes item-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  .plain {
+    margin: 0;
+    color: var(--muted);
+    font-size: 17px;
+    line-height: 1.65;
+  }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 24px;
+  }
+  .filters label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  select {
+    appearance: none;
+    min-height: 36px;
+    padding: 0 30px 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%236e6e73'/></svg>") no-repeat right 11px center;
+    color: var(--text);
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0 24px;
+    border: 0;
+    border-radius: 999px;
+    font-size: 16px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s var(--ease), transform 0.2s var(--ease);
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary { background: var(--bg); color: var(--text); }
+  .btn-secondary:hover { background: #ebebef; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  .switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 22px;
+    color: var(--muted);
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .switch input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .switch-track {
+    position: relative;
+    width: 42px;
+    height: 26px;
+    border-radius: 999px;
+    background: #d2d2d7;
+    flex: none;
+    transition: background-color 0.2s var(--ease);
+  }
+  .switch-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s var(--ease);
+  }
+  .switch input:checked + .switch-track { background: var(--accent); }
+  .switch input:checked + .switch-track .switch-thumb { transform: translateX(16px); }
+  .switch input:focus-visible + .switch-track { box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.3); }
+
+  .hint {
+    margin: 16px 0 0;
+    min-height: 20px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .hint.err { color: var(--err); }
+
+  details {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+  details:first-of-type { margin-top: 22px; }
+  summary {
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  details p {
+    margin: 10px 0 0;
+    max-height: 240px;
+    overflow: auto;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.75;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+
+  .preview {
+    padding: 12px;
+    border-radius: var(--radius-md);
+    background: var(--bg);
+  }
+  .preview img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    background: #fff;
+  }
+  .menu-meta { margin: 14px 0 0; color: var(--faint); font-size: 13px; }
+
+  footer {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 56px 24px 80px;
+    color: var(--faint);
+    font-size: 13px;
+    line-height: 1.8;
+    text-align: center;
+  }
+  footer strong { color: var(--muted); font-weight: 500; }
+
+  @media (max-width: 860px) {
+    main { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav-links { display: none; }
+    .nav-inner { justify-content: space-between; }
+    .page-head { padding: 64px 20px 40px; }
+    main { padding: 0 20px 56px; }
+    .card { padding: 26px 22px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    .title.is-new { animation: none; }
+    .btn:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<nav class="shell-nav">
+  <div class="shell-inner">
+    <a class="shell-brand" href="/">EInkPush</a>
+    <div class="shell-tabs">
+      <a class="shell-tab" href="/">首页</a>
+      <a class="shell-tab" href="/device">设备</a>
+      <a class="shell-tab" href="/apps" aria-current="page">应用</a>
+    </div>
+  </div>
+</nav>
+
+<header class="page-head">
+  <a class="back-link" href="/apps">← 应用列表</a>
+  <h1>人生指南</h1>
+  <p>767 条循证生活建议，一条一张卡片。按确认键翻下一条，或按章节、证据等级挑着看。</p>
+</header>
+
+<main>
+  <section class="card" aria-labelledby="title">
+    <div class="meta">
+      <span class="chip" id="chapter">正在读</span>
+      <span class="badge" id="evidence">证据 —</span>
+      <span class="counter" id="counter">— / —</span>
+    </div>
+    <h2 class="title" id="title">正在打开指南…</h2>
+    <p class="plain" id="plain">内容马上就好。</p>
+    <div class="tags" id="tags"></div>
+
+    <div class="filters">
+      <label>章节
+        <select id="chapterSelect" aria-label="按章节筛选"></select>
+      </label>
+      <label>证据
+        <select id="evidenceSelect" aria-label="按证据等级筛选"></select>
+      </label>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="nextBtn">下一条</button>
+      <button class="btn btn-secondary" id="randomBtn">随机一条</button>
+      <button class="btn btn-secondary" id="pushBtn">推送到设备</button>
+    </div>
+
+    <label class="switch">
+      <input type="checkbox" id="takeKeys" checked>
+      <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+      <span>接管设备确认键</span>
+    </label>
+
+    <p class="hint" id="msg" aria-live="polite">本页打开时，按设备确认键或空格都能翻下一条。</p>
+
+    <details id="benefitBox">
+      <summary>收益（原文）</summary>
+      <p id="benefit"></p>
+    </details>
+    <details id="costBox">
+      <summary>成本（原文）</summary>
+      <p id="cost"></p>
+    </details>
+    <details id="noteBox">
+      <summary>备注（原文）</summary>
+      <p id="note"></p>
+    </details>
+    <details id="sourceBox">
+      <summary>来源</summary>
+      <p id="source"></p>
+    </details>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>设备画面</h2>
+      <p>400 × 300 · 单色墨水屏预览</p>
+    </div>
+    <div class="preview">
+      <img id="shot" src="/apps/life-guide/api/preview.png" alt="设备画面预览">
+    </div>
+    <p class="menu-meta" id="menuMeta"></p>
+    <p class="hint">设备图字体跟随设备页里的全局设置，切换后回到本页会自动刷新预览。</p>
+    <p class="hint">本页打开时，设备确认键由这个应用接管；关掉页面即交还。</p>
+  </section>
+</main>
+
+<footer>
+  <strong>EInkPush</strong> · 人生指南<br>
+  内容来自开源项目 <a href="https://github.com/eternity4719/HowToLiveBetter" target="_blank" rel="noopener">HowToLiveBetter</a>
+  （《高性价比人生指南》），按
+  <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>
+  许可使用；本页只做排版精简，不改写原意。
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const API = '/apps/life-guide';
+const KEY_PREF = 'life-guide:take-keys';
+let state = null;
+let keysArmed = localStorage.getItem(KEY_PREF) !== 'off';
+let building = false;
+
+function setMessage(text, isError) {
+  const el = $('msg');
+  el.textContent = text;
+  el.className = 'hint' + (isError ? ' err' : '');
+}
+
+function evidenceBase(evidence) {
+  return String(evidence ?? '').match(/^[A-C]/)?.[0] ?? '?';
+}
+
+function fillSelects(chapters, evidenceOptions) {
+  if (building) return;
+  building = true;
+  const chapter = $('chapterSelect');
+  chapter.innerHTML = '<option value="all">全部章节</option>';
+  for (const item of chapters ?? []) {
+    const option = document.createElement('option');
+    option.value = item.no;
+    option.textContent = `第 ${Number(item.no)} 章 · ${item.title}（${item.count}）`;
+    chapter.appendChild(option);
+  }
+  const evidence = $('evidenceSelect');
+  evidence.innerHTML = '<option value="all">全部等级</option>';
+  for (const item of evidenceOptions ?? []) {
+    const option = document.createElement('option');
+    option.value = item.level;
+    option.textContent = `${item.level} 级（${item.count}）`;
+    evidence.appendChild(option);
+  }
+  building = false;
+}
+
+function paint(data, animate) {
+  const entry = data.entry;
+  if (!entry) return;
+  state = { ...(state ?? {}), ...data };
+  $('chapter').textContent = `第 ${Number(entry.chapterNo)} 章 · ${entry.chapter}`;
+  $('evidence').textContent = `证据 ${evidenceBase(entry.evidence)}`;
+  $('counter').textContent = `${data.position} / ${data.total}`;
+  $('title').textContent = entry.title;
+  $('plain').textContent = entry.plain;
+
+  const tags = $('tags');
+  tags.innerHTML = '';
+  const tagData = entry.tags ?? {};
+  const labels = [['钱', tagData['钱']], ['时间', tagData['时间']], ['毅力', tagData['毅力']], ['收益', tagData['收益']], ['口径', tagData['口径']]];
+  for (const [label, value] of labels) {
+    if (!value) continue;
+    const span = document.createElement('span');
+    span.className = 'tag';
+    span.textContent = `${label} ${value}`;
+    tags.appendChild(span);
+  }
+
+  $('benefit').textContent = entry.benefit || '原文没有单独的收益字段。';
+  $('cost').textContent = entry.cost || '原文没有单独的成本字段。';
+  $('note').textContent = entry.note || '原文没有备注。';
+  $('noteBox').hidden = !entry.note;
+  $('source').textContent = (entry.source || '见项目主页。')
+    + `\n\n${data.meta?.title ?? '高性价比人生指南'}`
+    + `\n${data.meta?.source ?? 'https://github.com/eternity4719/HowToLiveBetter'}`;
+
+  // 翻条接口也会带回当前筛选条件；没有时沿用上一次的，绝不能跳回「全部」
+  const filters = data.filters ?? state?.filters;
+  if (!building && filters) {
+    $('chapterSelect').value = filters.chapter ?? 'all';
+    $('evidenceSelect').value = filters.evidence ?? 'all';
+  }
+  if (data.meta) {
+    $('menuMeta').textContent = `${data.meta.title} · 共 ${data.allTotal ?? data.total} 条 · ${data.chapters?.length ?? 0} 个章节`;
+  }
+  if (animate) {
+    const title = $('title');
+    title.classList.remove('is-new');
+    void title.offsetWidth;
+    title.classList.add('is-new');
+  }
+}
+
+function refreshShot() {
+  $('shot').src = API + '/api/preview.png?t=' + Date.now();
+}
+
+// 设备页切换字体后，回到本页自动重新出图
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshShot(); });
+
+/** 接管/交还设备确认键：心跳续租，页面关闭后 2 分钟自动失效 */
+async function armDevice(active) {
+  try {
+    const r = await fetch(API + '/api/arm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  } catch (err) {
+    setMessage('设备按键接管失败：' + err.message, true);
+  }
+}
+
+async function loadState() {
+  try {
+    const r = await fetch(API + '/api/state');
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    fillSelects(data.chapters, data.evidenceOptions);
+    paint(data, false);
+    if (data.lastError) setMessage('最近一次推送失败：' + data.lastError, true);
+  } catch (err) {
+    setMessage('读取指南失败：' + err.message, true);
+  }
+  refreshShot();
+}
+
+async function advance({ shuffle = false } = {}) {
+  $('nextBtn').disabled = true;
+  $('randomBtn').disabled = true;
+  setMessage(shuffle ? '随机挑一条…' : '翻到下一条…');
+  try {
+    const r = await fetch(API + '/api/next', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shuffle }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    paint({ ...data, entry: data.entry, position: data.position, total: data.total }, true);
+    if (data.pushed) setMessage(`「${data.entry.title}」已推到设备。`);
+    else if (data.error) setMessage(`翻到「${data.entry.title}」；设备未连接，只更新了网页预览。`, true);
+    else setMessage(`翻到「${data.entry.title}」。`);
+  } catch (err) {
+    setMessage('翻页失败：' + err.message, true);
+  } finally {
+    $('nextBtn').disabled = false;
+    $('randomBtn').disabled = false;
+    refreshShot();
+  }
+}
+
+async function pushCurrent() {
+  $('pushBtn').disabled = true;
+  setMessage('正在推送到设备…');
+  try {
+    const r = await fetch(API + '/api/push', { method: 'POST' });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    setMessage(`「${data.entry?.title ?? '当前这条'}」已推送到设备。`);
+  } catch (err) {
+    setMessage('推送失败：' + err.message, true);
+  } finally {
+    $('pushBtn').disabled = false;
+    refreshShot();
+  }
+}
+
+async function applyFilter() {
+  if (building) return;
+  setMessage('正在筛选…');
+  try {
+    const r = await fetch(API + '/api/filter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chapter: $('chapterSelect').value,
+        evidence: $('evidenceSelect').value,
+      }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    await loadState();
+    setMessage(`筛选后共 ${data.total} 条。`);
+  } catch (err) {
+    setMessage('筛选失败：' + err.message, true);
+  }
+}
+
+$('nextBtn').addEventListener('click', () => advance());
+$('randomBtn').addEventListener('click', () => advance({ shuffle: true }));
+$('pushBtn').addEventListener('click', pushCurrent);
+$('chapterSelect').addEventListener('change', applyFilter);
+$('evidenceSelect').addEventListener('change', applyFilter);
+
+$('takeKeys').checked = keysArmed;
+$('takeKeys').addEventListener('change', () => {
+  keysArmed = $('takeKeys').checked;
+  localStorage.setItem(KEY_PREF, keysArmed ? 'on' : 'off');
+  armDevice(keysArmed);
+  setMessage(keysArmed ? '已接管设备确认键。' : '已交还设备确认键。');
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key !== ' ' || event.repeat) return;
+  const tag = (event.target.tagName || '').toLowerCase();
+  if (['input', 'select', 'textarea', 'button', 'a'].includes(tag)) return;
+  event.preventDefault();
+  advance();
+});
+
+// 页面开着就持续续租；关掉页面用 beacon 交还，避免影响其他应用
+window.addEventListener('pagehide', () => {
+  if (!keysArmed) return;
+  const blob = new Blob([JSON.stringify({ active: false })], { type: 'application/json' });
+  navigator.sendBeacon(API + '/api/arm', blob);
+});
+setInterval(() => { if (keysArmed) armDevice(true); }, 25000);
+
+armDevice(keysArmed);
+loadState();
+</script>
+</body>
+</html>

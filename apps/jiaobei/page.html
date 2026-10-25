@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<title>掷杯筊 · EInkPush</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --faint: #86868b;
+    --line: #e5e5ea;
+    --accent: #0071e3;
+    --accent-hover: #0077ed;
+    --err: #d70015;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --container: 980px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+      "PingFang SC", "Helvetica Neue", "Microsoft YaHei", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  button { font: inherit; }
+  :focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.3); }
+
+  /* 统一导航：tab 形式，当前页高亮 */
+  .shell-nav { position: sticky; top: 0; z-index: 30; background: rgba(255,255,255,0.86);
+    backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(0,0,0,0.06); }
+  .shell-inner { max-width: 1040px; margin: 0 auto; padding: 0 24px; height: 56px;
+    display: flex; align-items: center; gap: 12px; }
+  .shell-brand { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; color: var(--text); text-decoration: none; }
+  .shell-brand:hover { text-decoration: none; }
+  .shell-tabs { margin-left: auto; display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(0,0,0,0.05); }
+  .shell-tab { padding: 7px 16px; border-radius: 999px; color: var(--muted); font-size: 14px; text-decoration: none;
+    transition: color 0.25s var(--ease), background-color 0.25s var(--ease); }
+  .shell-tab:hover { color: var(--text); text-decoration: none; }
+  .shell-tab[aria-current="page"] { background: #fff; color: var(--text); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  @media (max-width: 560px) {
+    .shell-inner { padding: 0 14px; gap: 8px; }
+    .shell-brand { font-size: 17px; }
+    .shell-tab { padding: 6px 12px; font-size: 13px; }
+  }
+
+  .page-head {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 88px 24px 48px;
+    text-align: center;
+    position: relative;
+  }
+  .back-link {
+    position: absolute; top: 24px; left: 24px;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 14px; color: var(--muted); text-decoration: none;
+    transition: color 0.15s ease;
+  }
+  .back-link:hover { color: var(--text); }
+  .page-head h1 {
+    margin: 0 0 18px;
+    font-size: clamp(40px, 6vw, 64px);
+    line-height: 1.06;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+  .page-head p {
+    max-width: 560px;
+    margin: 0 auto;
+    color: var(--muted);
+    font-size: 18px;
+    line-height: 1.55;
+  }
+
+  main {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 24px 72px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: 20px;
+    align-items: start;
+  }
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 32px;
+  }
+  .card-head { margin-bottom: 18px; }
+  .card-head h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .card-head p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(0, 113, 227, 0.08);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .counter { color: var(--faint); font-size: 13px; }
+
+  .result-name {
+    margin: 24px 0 12px;
+    font-size: clamp(38px, 5vw, 52px);
+    line-height: 1.12;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    overflow-wrap: anywhere;
+  }
+  .result-name.is-new { animation: result-in 0.5s var(--ease); }
+  @keyframes result-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+  .result-note {
+    margin: 0;
+    min-height: 48px;
+    color: var(--muted);
+    font-size: 17px;
+    line-height: 1.55;
+  }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0 26px;
+    border: 0;
+    border-radius: 999px;
+    font-size: 16px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s var(--ease), color 0.2s var(--ease),
+      transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary { background: var(--bg); color: var(--text); }
+  .btn-secondary:hover { background: #ebebef; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  .switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 26px;
+    color: var(--muted);
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .switch input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .switch-track {
+    position: relative;
+    width: 42px;
+    height: 26px;
+    border-radius: 999px;
+    background: #d2d2d7;
+    flex: none;
+    transition: background-color 0.2s var(--ease);
+  }
+  .switch-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s var(--ease);
+  }
+  .switch input:checked + .switch-track { background: var(--accent); }
+  .switch input:checked + .switch-track .switch-thumb { transform: translateX(16px); }
+  .switch input:focus-visible + .switch-track { box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.3); }
+
+  .hint {
+    margin: 16px 0 0;
+    min-height: 20px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .hint.err { color: var(--err); }
+
+  .preview {
+    padding: 12px;
+    border-radius: var(--radius-md);
+    background: var(--bg);
+  }
+  .preview img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    background: #fff;
+  }
+  .menu-meta { margin: 14px 0 0; color: var(--faint); font-size: 13px; }
+
+  footer {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 56px 24px 80px;
+    color: var(--faint);
+    font-size: 13px;
+    line-height: 1.8;
+    text-align: center;
+  }
+  footer strong { color: var(--muted); font-weight: 500; }
+
+  @media (max-width: 860px) {
+    main { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .page-head { padding: 64px 20px 40px; }
+    main { padding: 0 20px 56px; }
+    .card { padding: 26px 22px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    .result-name.is-new { animation: none; }
+    .btn:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<nav class="shell-nav">
+  <div class="shell-inner">
+    <a class="shell-brand" href="/">EInkPush</a>
+    <div class="shell-tabs">
+      <a class="shell-tab" href="/">首页</a>
+      <a class="shell-tab" href="/device">设备</a>
+      <a class="shell-tab" href="/apps" aria-current="page">应用</a>
+    </div>
+  </div>
+</nav>
+
+<header class="page-head">
+  <a class="back-link" href="/apps">← 应用列表</a>
+  <h1>掷杯筊</h1>
+  <p>心中默念所求，按一下确认键。杯筊落地，一平一凸为圣筊。</p>
+</header>
+
+<main>
+  <section class="card" aria-labelledby="resultName">
+    <div class="meta">
+      <span class="chip" id="faceNote">尚未掷杯</span>
+      <span class="counter" id="counter">还没掷过</span>
+    </div>
+    <h2 class="result-name" id="resultName">静待一问</h2>
+    <p class="result-note" id="resultNote">按下确认键，掷出第一杯。</p>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="throwBtn">再掷一次</button>
+      <button class="btn btn-secondary" id="pushBtn">推送到设备</button>
+    </div>
+
+    <label class="switch">
+      <input type="checkbox" id="takeKeys" checked>
+      <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+      <span>接管设备确认键</span>
+    </label>
+
+    <p class="hint" id="msg" aria-live="polite">本页打开时，按设备确认键或空格都能掷。</p>
+    <p class="menu-meta" id="menuMeta"></p>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>设备画面</h2>
+      <p>400 × 300 · 单色墨水屏预览</p>
+    </div>
+    <div class="preview">
+      <img id="shot" src="/apps/jiaobei/api/preview.png" alt="设备画面预览">
+    </div>
+    <p class="hint">本页打开时，设备确认键由这个应用接管；关掉页面即交还。</p>
+  </section>
+</main>
+
+<footer>
+  <strong>EInkPush</strong> · 掷杯筊<br>
+  圣筊 1/2 · 笑筊 1/4 · 阴筊 1/4，心诚则灵，娱乐而已。
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const API = '/apps/jiaobei';
+const KEY_PREF = 'jiaobei:take-keys';
+let state = null;
+let keysArmed = localStorage.getItem(KEY_PREF) !== 'off';
+
+function setMessage(text, isError) {
+  const el = $('msg');
+  el.textContent = text;
+  el.className = 'hint' + (isError ? ' err' : '');
+}
+
+function paint(data, animate) {
+  state = { ...(state ?? {}), ...data };
+  const outcome = data.outcome;
+  $('faceNote').textContent = outcome?.faceNote ?? '尚未掷杯';
+  $('resultName').textContent = outcome?.name ?? '静待一问';
+  $('resultNote').textContent = outcome?.verdict ?? '按下确认键，掷出第一杯。';
+  $('counter').textContent = data.throws > 0 ? `第 ${data.throws} 次请问` : '还没掷过';
+  if (animate) {
+    const name = $('resultName');
+    name.classList.remove('is-new');
+    void name.offsetWidth;
+    name.classList.add('is-new');
+  }
+}
+
+function refreshShot() {
+  $('shot').src = API + '/api/preview.png?t=' + Date.now();
+}
+
+// 设备页切换字体后，回到本页自动重新出图
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshShot(); });
+
+/** 接管/交还设备确认键：心跳续租，页面关闭后 2 分钟自动失效 */
+async function armDevice(active) {
+  try {
+    const r = await fetch(API + '/api/arm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  } catch (err) {
+    setMessage('设备按键接管失败：' + err.message, true);
+  }
+}
+
+async function loadState() {
+  try {
+    const r = await fetch(API + '/api/state');
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    paint(data, false);
+    if (data.lastError) setMessage('最近一次推送失败：' + data.lastError, true);
+  } catch (err) {
+    setMessage('读取杯象失败：' + err.message, true);
+  }
+  refreshShot();
+}
+
+async function throwOnce() {
+  $('throwBtn').disabled = true;
+  setMessage('杯筊落地…');
+  try {
+    const r = await fetch(API + '/api/throw', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    paint(data, true);
+    if (data.pushed) setMessage(`掷出「${data.outcome.name}」，设备已更新。`);
+    else if (data.error) setMessage(`掷出「${data.outcome.name}」；设备未连接，只更新了网页预览。`, true);
+    else setMessage(`掷出「${data.outcome.name}」。`);
+  } catch (err) {
+    setMessage('掷杯失败：' + err.message, true);
+  } finally {
+    $('throwBtn').disabled = false;
+    refreshShot();
+  }
+}
+
+async function pushCurrent() {
+  $('pushBtn').disabled = true;
+  setMessage('正在推送到设备…');
+  try {
+    const r = await fetch(API + '/api/push', { method: 'POST' });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    setMessage(`「${state?.outcome?.name ?? '当前杯象'}」已推送到设备。`);
+  } catch (err) {
+    setMessage('推送失败：' + err.message, true);
+  } finally {
+    $('pushBtn').disabled = false;
+    refreshShot();
+  }
+}
+
+$('throwBtn').addEventListener('click', throwOnce);
+$('pushBtn').addEventListener('click', pushCurrent);
+
+$('takeKeys').checked = keysArmed;
+$('takeKeys').addEventListener('change', () => {
+  keysArmed = $('takeKeys').checked;
+  localStorage.setItem(KEY_PREF, keysArmed ? 'on' : 'off');
+  armDevice(keysArmed);
+  setMessage(keysArmed ? '已接管设备确认键。' : '已交还设备确认键。');
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key !== ' ' || event.repeat) return;
+  const tag = (event.target.tagName || '').toLowerCase();
+  if (['input', 'select', 'textarea', 'button', 'a'].includes(tag)) return;
+  event.preventDefault();
+  throwOnce();
+});
+
+// 页面开着就持续续租；关掉页面用 beacon 交还，避免影响其他应用
+window.addEventListener('pagehide', () => {
+  if (!keysArmed) return;
+  const blob = new Blob([JSON.stringify({ active: false })], { type: 'application/json' });
+  navigator.sendBeacon(API + '/api/arm', blob);
+});
+setInterval(() => { if (keysArmed) armDevice(true); }, 25000);
+
+$('menuMeta').textContent = '圣筊 1/2 · 笑筊 1/4 · 阴筊 1/4';
+armDevice(keysArmed);
+loadState();
+</script>
+</body>
+</html>

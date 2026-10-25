@@ -1,0 +1,32 @@
+node_modules/
+/data/
+.cache/
+*.log
+.DS_Store
+.env
+
+# ---- AI agent / 编码助手的本地目录：会话历史、本地规则与索引缓存随机器而异，不入库 ----
+# 如需共享某个工具的配置（如 .cursor/rules），把对应行删掉再单独提交。
+.agents/
+.aider/
+.aider.chat.history.md
+.aider.tags.cache.v*
+.amazonq/
+.claude/
+.cline/
+.codebuddy/
+.codeium/
+.codex/
+.continue/
+.crush/
+.cursor/
+.gemini/
+.iflow/
+.junie/
+.kilocode/
+.opencode/
+.qwen/
+.roo/
+.trae/
+.windsurf/
+.workbuddy/

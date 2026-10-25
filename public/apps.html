@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<title>应用 · EInkPush</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --faint: #86868b;
+    --accent: #0071e3;
+    --accent-hover: #0077ed;
+    --radius-lg: 20px;
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --container: 980px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+      "PingFang SC", "Helvetica Neue", "Microsoft YaHei", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  :focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.3); }
+
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(255, 255, 255, 0.86);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  .nav-inner {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .brand {
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .brand:hover { text-decoration: none; }
+  .tabs {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.05);
+  }
+  .tab {
+    padding: 7px 18px;
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 14px;
+    white-space: nowrap;
+    transition: color 0.25s var(--ease), background-color 0.25s var(--ease);
+  }
+  .tab:hover { color: var(--text); text-decoration: none; }
+  .tab[aria-current="page"] {
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  .nav-tail { width: 76px; }
+
+  .page-head {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 88px 24px 56px;
+  }
+  .page-head h1 {
+    margin: 0 0 18px;
+    font-size: clamp(36px, 5vw, 56px);
+    line-height: 1.08;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+  .page-head p {
+    margin: 0;
+    max-width: 620px;
+    color: var(--muted);
+    font-size: 18px;
+    line-height: 1.55;
+  }
+
+  /* 瀑布流：列式排布，卡片高度不一致时也不会互相拉出空白 */
+  main {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 24px 80px;
+    columns: 260px;
+    column-gap: 16px;
+  }
+  .app {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 28px;
+    margin: 0 0 16px;
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    color: var(--text);
+    text-decoration: none;
+    transition: box-shadow 0.5s var(--ease), transform 0.5s var(--ease);
+  }
+  .app:hover { box-shadow: var(--shadow-lg); text-decoration: none; }
+  .app:active { transform: scale(0.98); }
+  .app-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--text);
+    transition: transform 0.5s var(--ease);
+  }
+  .app-icon svg { width: 22px; height: 22px; display: block; }
+  .app:hover .app-icon { transform: scale(1.05); }
+  .app h2 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -0.015em; }
+  .app p { margin: -6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+  .app .go {
+    margin-top: auto;
+    padding-top: 10px;
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .app .go span { transition: transform 0.4s var(--ease); }
+  .app:hover .go span { transform: translateX(3px); }
+  .hint {
+    column-span: all;
+    margin: 24px 0 0;
+    color: var(--faint);
+    font-size: 14px;
+    text-align: center;
+  }
+
+  footer {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 56px 24px 80px;
+    color: var(--faint);
+    font-size: 13px;
+    line-height: 1.8;
+    text-align: center;
+  }
+  footer strong { color: var(--muted); font-weight: 500; }
+
+  @media (max-width: 720px) {
+    .nav-inner { gap: 12px; padding: 0 16px; }
+    .brand { font-size: 17px; }
+    .nav-tail { display: none; }
+    .tab { padding: 6px 13px; font-size: 13px; }
+    .page-head { padding: 64px 20px 44px; }
+    main { padding: 0 20px 64px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    .app:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/">EInkPush</a>
+    <div class="tabs">
+      <a class="tab" href="/">首页</a>
+      <a class="tab" href="/device">设备</a>
+      <a class="tab" href="/apps" aria-current="page">应用</a>
+    </div>
+    <span class="nav-tail" aria-hidden="true"></span>
+  </div>
+</nav>
+
+<header class="page-head">
+  <h1>应用</h1>
+  <p>每个应用独立作画、独立配置，共享同一条设备连接。打开一个，开始使用。</p>
+</header>
+
+<main id="list"><p class="hint">加载中…</p></main>
+
+<footer>
+  <strong>EInkPush</strong> · 局域网墨水屏推送服务
+</footer>
+
+<script>
+const esc = (value) => String(value ?? '').replace(/[&<>"]/g, (c) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
+}[c]));
+
+// 每个应用一张线描图标（24×24、stroke 跟随文字色），按应用 id 取用
+const ICON_ATTRS = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+  + 'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+const ICONS = {
+  today: `<svg ${ICON_ATTRS}>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="3"/>
+      <path d="M3.5 9.5h17"/>
+      <path d="M8 3v4"/>
+      <path d="M16 3v4"/>
+      <path d="M8 13h2"/>
+      <path d="M14 13h2"/>
+      <path d="M8 17h2"/>
+      <path d="M14 17h2"/>
+    </svg>`,
+  vocabulary: `<svg ${ICON_ATTRS}>
+      <path d="M12 6.4C10.4 5 8.4 4.4 4.8 4.4v14.2c3.6 0 5.6.6 7.2 2 1.6-1.4 3.6-2 7.2-2V4.4c-3.6 0-5.6.6-7.2 2z"/>
+      <path d="M12 6.4v14.2"/>
+    </svg>`,
+  'what-to-eat': `<svg ${ICON_ATTRS}>
+      <path d="M5 3v6a2.5 2.5 0 0 0 5 0V3"/>
+      <path d="M7.5 11.5V21"/>
+      <path d="M18.5 3c-1.9 1.7-2.8 4-2.8 6.3 0 1.6 1.1 2.7 2.8 2.7"/>
+      <path d="M18.5 3v18"/>
+    </svg>`,
+  'life-guide': `<svg ${ICON_ATTRS}>
+      <circle cx="12" cy="12" r="9"/>
+      <path d="m15.6 8.4-2 5.2-5.2 2 2-5.2z"/>
+    </svg>`,
+  jiaobei: `<svg ${ICON_ATTRS}>
+      <path d="M3.5 14.5C3.5 11.3 5.3 9.2 7.7 9.2s4.2 2.1 4.2 5.3z"/>
+      <path d="M12.1 9.2h8.4c0 3.1-1.9 5.3-4.2 5.3s-4.2-2.2-4.2-5.3z"/>
+    </svg>`,
+  pet: `<svg ${ICON_ATTRS}>
+      <ellipse cx="7.5" cy="9" rx="1.9" ry="2.5"/>
+      <ellipse cx="16.5" cy="9" rx="1.9" ry="2.5"/>
+      <ellipse cx="4.6" cy="13.6" rx="1.7" ry="2.2"/>
+      <ellipse cx="19.4" cy="13.6" rx="1.7" ry="2.2"/>
+      <path d="M12 13.2c-3 0-5 2.3-5 4.4 0 1.8 1.4 3 3.1 3 .9 0 1.3-.4 1.9-.4s1 .4 1.9.4c1.7 0 3.1-1.2 3.1-3 0-2.1-2-4.4-5-4.4z"/>
+    </svg>`,
+  all: `<svg ${ICON_ATTRS}>
+      <rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/>
+      <rect x="13.5" y="3.5" width="7" height="7" rx="1.8"/>
+      <rect x="3.5" y="13.5" width="7" height="7" rx="1.8"/>
+      <rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/>
+    </svg>`,
+};
+
+function iconForApp(id) {
+  return ICONS[id] ?? ICONS.all;
+}
+
+fetch('/api/apps').then((r) => r.json()).then((data) => {
+  const list = document.getElementById('list');
+  const apps = data.apps ?? [];
+  if (!apps.length) {
+    list.innerHTML = '<p class="hint">没有安装任何应用</p>';
+    return;
+  }
+  list.innerHTML = apps.map((app) => `
+    <a class="app" href="${esc(app.url)}">
+      <span class="app-icon">${iconForApp(app.id)}</span>
+      <h2>${esc(app.name)}</h2>
+      <p>${esc(app.description ?? '')}</p>
+      <span class="go">打开 <span aria-hidden="true">→</span></span>
+    </a>`).join('');
+}).catch(() => {
+  document.getElementById('list').innerHTML = '<p class="hint">应用列表读取失败</p>';
+});
+</script>
+</body>
+</html>

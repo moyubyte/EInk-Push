@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<title>宠物 · EInkPush</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --faint: #86868b;
+    --line: #e5e5ea;
+    --accent: #0071e3;
+    --accent-hover: #0077ed;
+    --ok: #34c759;
+    --err: #d70015;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --container: 1040px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+      "PingFang SC", "Helvetica Neue", "Microsoft YaHei", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  button, input { font: inherit; }
+  :focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.3); }
+
+  .shell-nav { position: sticky; top: 0; z-index: 30; background: rgba(255,255,255,0.86);
+    backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(0,0,0,0.06); }
+  .shell-inner { max-width: var(--container); margin: 0 auto; padding: 0 24px; height: 56px;
+    display: flex; align-items: center; gap: 12px; }
+  .shell-brand { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; color: var(--text); text-decoration: none; }
+  .shell-brand:hover { text-decoration: none; }
+  .shell-app { padding-left: 12px; border-left: 1px solid var(--line); color: var(--muted); font-size: 14px; white-space: nowrap; }
+  .shell-tabs { margin-left: auto; display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(0,0,0,0.05); }
+  .shell-tab { padding: 7px 16px; border-radius: 999px; color: var(--muted); font-size: 14px; text-decoration: none;
+    transition: color 0.25s var(--ease), background-color 0.25s var(--ease); }
+  .shell-tab:hover { color: var(--text); text-decoration: none; }
+  .shell-tab[aria-current="page"] { background: #fff; color: var(--text); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+  .page-head { max-width: var(--container); margin: 0 auto; padding: 64px 24px 36px; position: relative; }
+  .back-link {
+    position: absolute; top: 24px; left: 24px;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 14px; color: var(--muted); text-decoration: none;
+    transition: color 0.15s ease;
+  }
+  .back-link:hover { color: var(--text); }
+  .page-head h1 { margin: 0 0 12px; font-size: clamp(36px, 5vw, 52px); line-height: 1.08; font-weight: 600; letter-spacing: -0.03em; }
+  .page-head p { margin: 0; max-width: 640px; color: var(--muted); font-size: 17px; line-height: 1.6; }
+
+  /* 卡片瀑布流：两列各自紧贴，不同高度的卡片不会被行高拉出空白 */
+  main { max-width: var(--container); margin: 0 auto; padding: 0 24px 80px;
+    columns: 2; column-gap: 20px; }
+  main > .card {
+    break-inside: avoid; -webkit-column-break-inside: avoid;
+    margin: 0 0 20px;
+  }
+  .card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 28px; }
+  .card h2 { margin: 0 0 6px; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+  .card .sub { margin: 0 0 20px; color: var(--muted); font-size: 13px; }
+
+  .device { max-width: 100%; padding: 11px; border-radius: 24px;
+    background: linear-gradient(160deg, #3a3a3c 0%, #1c1c1e 60%, #101012 100%);
+    box-shadow: 0 20px 44px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.12); }
+  .device-screen { position: relative; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden;
+    background: #fbfbf9; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35); }
+  .device-screen img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .device-foot { display: flex; align-items: center; justify-content: space-between; padding: 10px 6px 1px;
+    color: #a1a1a6; font-size: 12px; }
+  .device-foot strong { color: #f5f5f7; font-weight: 500; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 20px;
+    border: 0; border-radius: 999px; font-size: 15px; font-weight: 500; cursor: pointer; text-decoration: none;
+    transition: background-color 0.2s var(--ease), transform 0.2s var(--ease), opacity 0.2s var(--ease); }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary { background: var(--bg); color: var(--text); }
+  .btn-secondary:hover { background: #ebebef; }
+  .btn:disabled { opacity: 0.42; cursor: not-allowed; transform: none; }
+  .btn-ghost { background: transparent; color: var(--accent); padding: 0 8px; min-height: 32px; font-size: 14px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+  .actions .btn { flex: 1; min-width: 92px; }
+
+  .hint { margin: 14px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+  .hint.err { color: var(--err); }
+  .hint.ok { color: #1a7f37; }
+
+  .name-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .pet-hero { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 26px; }
+  .avatar-wrap { position: relative; flex: none; width: 92px; }
+  .avatar { display: block; width: 92px; height: 92px; padding: 8px; border-radius: 24px;
+    background: var(--bg); object-fit: contain; }
+  .avatar-tag { position: absolute; left: 50%; bottom: -10px; transform: translateX(-50%); white-space: nowrap;
+    padding: 2px 9px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line);
+    color: var(--muted); font-size: 11px; line-height: 1.6; }
+  .hero-main { flex: 1; min-width: 0; padding-top: 4px; }
+  .hero-main .name-row { margin-bottom: 10px; }
+  .hero-main .tags { margin-bottom: 0; }
+  .name-input { flex: 1; min-width: 0; padding: 8px 12px; border: 1px solid transparent; border-radius: 10px;
+    background: var(--bg); color: var(--text); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+  .name-input:focus { background: #fff; border-color: var(--accent); box-shadow: 0 0 0 4px rgba(0,113,227,0.15); }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 22px; }
+  .tag { padding: 4px 10px; border-radius: 999px; background: var(--bg); color: var(--muted); font-size: 12px; }
+  .tag.level { background: rgba(0,113,227,0.1); color: var(--accent); font-weight: 500; }
+
+  .stat { display: grid; grid-template-columns: 44px 1fr 40px; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .stat-label { color: var(--muted); font-size: 13px; }
+  .stat-value { color: var(--text); font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
+  .bar { height: 8px; border-radius: 999px; background: var(--bg); overflow: hidden; }
+  .bar span { display: block; height: 100%; border-radius: 999px; background: var(--text);
+    transition: width 0.5s var(--ease); }
+  .bar.accent span { background: var(--accent); }
+
+  .exp { margin: 2px 0 24px; }
+  .exp-head { display: flex; justify-content: space-between; color: var(--faint); font-size: 12px; margin-bottom: 6px; }
+
+  .quote { margin: 0; padding: 16px 18px; border-radius: var(--radius-md); background: var(--bg);
+    color: var(--text); font-size: 14px; line-height: 1.6; }
+  .meta-row { display: flex; justify-content: space-between; margin-top: 14px; color: var(--faint); font-size: 12px; }
+
+  .timeline { margin: 0; padding: 0; list-style: none; }
+  .timeline li { display: flex; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .timeline li:first-child { border-top: 0; padding-top: 0; }
+  .timeline time { flex: none; width: 86px; color: var(--faint); font-size: 12px; padding-top: 2px; }
+  .timeline p { margin: 0; line-height: 1.5; }
+  .empty { color: var(--faint); font-size: 14px; }
+
+  .switch-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+  .switch-row h3 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+  .switch-row p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+  .switch { position: relative; flex: none; width: 50px; height: 30px; margin-top: 2px; }
+  .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .switch i { position: absolute; inset: 0; border-radius: 999px; background: #e5e5ea;
+    transition: background-color 0.25s var(--ease); pointer-events: none; }
+  .switch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform 0.25s var(--ease); }
+  .switch input:checked + i { background: var(--accent); }
+  .switch input:checked + i::after { transform: translateX(20px); }
+  .switch input:focus-visible + i { box-shadow: 0 0 0 4px rgba(0,113,227,0.3); }
+
+  @media (max-width: 860px) {
+    main { columns: 1; }
+    .page-head { padding: 48px 20px 28px; }
+    main { padding: 0 20px 64px; }
+    .shell-inner { padding: 0 14px; gap: 8px; }
+    .shell-app { display: none; }
+    .shell-tab { padding: 6px 12px; font-size: 13px; }
+    .card { padding: 22px; }
+    .pet-hero { gap: 14px; }
+    .avatar-wrap, .avatar { width: 76px; }
+    .avatar { height: 76px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    .btn:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<nav class="shell-nav">
+  <div class="shell-inner">
+    <a class="shell-brand" href="/">EInkPush</a>
+    <span class="shell-app">宠物</span>
+    <div class="shell-tabs">
+      <a class="shell-tab" href="/">首页</a>
+      <a class="shell-tab" href="/device">设备</a>
+      <a class="shell-tab" href="/apps" aria-current="page">应用</a>
+    </div>
+  </div>
+</nav>
+
+<header class="page-head">
+  <a class="back-link" href="/apps">← 应用列表</a>
+  <h1>宠物</h1>
+  <p>它在 NAS 上按真实时间生活：会饿、会困、会长大。关掉网页也在成长，重启服务也接着长。</p>
+</header>
+
+<main>
+    <section class="card">
+      <h2>设备画面</h2>
+      <p class="sub">400 × 300 · 单色墨水屏</p>
+      <div class="device">
+        <div class="device-screen">
+          <img id="shot" src="/apps/pet/api/preview.png" alt="宠物状态卡预览">
+        </div>
+        <div class="device-foot">
+          <strong id="footName">小爪</strong>
+          <span id="footStage">第 1 天</span>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" id="pushBtn">推送到设备</button>
+        <button class="btn btn-secondary" id="refreshBtn">刷新预览</button>
+      </div>
+      <p class="hint" id="hint" aria-live="polite">宠物卡片在屏上时：确认=摸摸（6 种动作轮着来）、上=喂食、下=玩耍。</p>
+    </section>
+
+    <section class="card">
+      <div class="pet-hero">
+        <div class="avatar-wrap">
+          <img class="avatar" id="avatar" src="/apps/pet/api/sprite.png" alt="柯基当前表情">
+          <span class="avatar-tag" id="spriteLabel">陪着你</span>
+        </div>
+        <div class="hero-main">
+          <div class="name-row">
+            <input class="name-input" id="nameInput" maxlength="8" aria-label="宠物名字">
+            <button class="btn btn-ghost" id="saveName">保存</button>
+          </div>
+          <div class="tags">
+            <span class="tag level" id="levelTag">Lv.1</span>
+            <span class="tag" id="stageTag">幼崽</span>
+            <span class="tag" id="ageTag">第 1 天</span>
+            <span class="tag" id="streakTag">连续 0 天</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat">
+        <span class="stat-label">饱食</span>
+        <div class="bar"><span id="hungerBar"></span></div>
+        <span class="stat-value" id="hungerValue">80</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">心情</span>
+        <div class="bar"><span id="moodBar"></span></div>
+        <span class="stat-value" id="moodValue">80</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">精力</span>
+        <div class="bar"><span id="energyBar"></span></div>
+        <span class="stat-value" id="energyValue">80</span>
+      </div>
+
+      <div class="exp">
+        <div class="exp-head"><span>经验</span><span id="expText">0 / 6</span></div>
+        <div class="bar accent"><span id="expBar" style="width:0%"></span></div>
+      </div>
+
+      <p class="quote" id="moodLine">正在醒来。</p>
+      <div class="meta-row">
+        <span id="nextStage">明天开始长大</span>
+        <span id="bornText"></span>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-secondary" data-action="feed">喂食</button>
+        <button class="btn btn-secondary" data-action="pet">摸摸</button>
+        <button class="btn btn-secondary" data-action="play">玩耍</button>
+      </div>
+      <p class="hint" id="actionHint" aria-live="polite"></p>
+    </section>
+
+    <section class="card">
+      <h2>最近的动态</h2>
+      <p class="sub">服务端只保留最近 40 条。</p>
+      <ul class="timeline" id="timeline"><li class="empty">加载中…</li></ul>
+    </section>
+
+    <section class="card">
+      <h2>出现在其他应用里</h2>
+      <p class="sub">不改尺寸，也不盖住正文。</p>
+      <div class="switch-row">
+        <div>
+          <h3>叠加宠物徽章</h3>
+          <p>任何应用推图时，自动在图片的留白处放上它的脸、等级和心情条。角落有空白就贴角；四角都压着字时改找图里的空白口袋，绝不盖住正文。</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="overlayToggle" checked aria-label="叠加宠物徽章">
+          <i aria-hidden="true"></i>
+        </label>
+      </div>
+      <p class="hint" id="overlayHint">徽章为 88×40，黑白线条，跟随设备字体。</p>
+    </section>
+</main>
+
+<script>
+const API = '/apps/pet';
+const $ = (id) => document.getElementById(id);
+const esc = (value) => String(value ?? '').replace(/[&<>"]/g, (c) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
+}[c]));
+
+const state = { pet: null, derived: null, cooldowns: {}, actions: [] };
+
+function show(text, kind = '') {
+  const el = $('hint');
+  el.className = `hint ${kind}`;
+  el.textContent = text;
+}
+
+function actionHint(text, kind = '') {
+  const el = $('actionHint');
+  el.className = `hint ${kind}`;
+  el.textContent = text;
+}
+
+function relative(iso) {
+  const time = new Date(iso).getTime();
+  if (!Number.isFinite(time)) return '';
+  const diff = Date.now() - time;
+  if (diff < 60000) return '刚刚';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`;
+  return `${Math.floor(diff / 86400000)} 天前`;
+}
+
+function apply(pet, derived, extra = {}) {
+  state.pet = pet;
+  state.derived = derived;
+  state.cooldowns = { ...(derived.cooldowns || {}), ...(extra.cooldowns || {}) };
+
+  $('nameInput').value = pet.name;
+  $('footName').textContent = pet.name;
+  $('levelTag').textContent = `Lv.${derived.level}`;
+  $('stageTag').textContent = derived.stage;
+  $('ageTag').textContent = `第 ${derived.ageDays + 1} 天`;
+  $('streakTag').textContent = `连续 ${pet.streak || 0} 天`;
+  $('footStage').textContent = `第 ${derived.ageDays + 1} 天`;
+
+  const stats = [['hunger', pet.hunger], ['mood', pet.mood], ['energy', pet.energy]];
+  for (const [key, value] of stats) {
+    const percent = Math.max(0, Math.min(100, value));
+    $(`${key}Bar`).style.width = `${percent}%`;
+    $(`${key}Value`).textContent = Math.round(value);
+  }
+  $('moodLine').textContent = derived.moodLine;
+  $('expBar').style.width = `${derived.levelPercent}%`;
+  $('expText').textContent = `${derived.levelCurrent} / ${derived.levelNeed}`;
+  $('nextStage').textContent = derived.nextStage
+    ? `${derived.nextStage.days - derived.ageDays} 天后进入「${derived.nextStage.name}」`
+    : '已经长到最后的阶段';
+  $('bornText').textContent = `出生于 ${new Date(pet.bornAt).toLocaleDateString('zh-CN')}`;
+  $('overlayToggle').checked = pet.overlay !== false;
+  $('overlayHint').textContent = pet.overlay === false
+    ? '已关闭：其他应用推图保持原样。'
+    : '徽章为 88×40，柯基表情 + 等级 + 心情条。';
+
+  const sprite = extra.sprite;
+  if (sprite) {
+    $('spriteLabel').textContent = sprite.label || '陪着你';
+    $('avatar').src = `${API}/api/sprite.png?key=${encodeURIComponent(sprite.key)}&t=${Date.now()}`;
+  }
+
+  $('timeline').innerHTML = (pet.log || []).slice().reverse().slice(0, 12).map((item) => `
+    <li><time>${esc(relative(item.at))}</time><p>${esc(item.text)}</p></li>`).join('')
+    || '<li class="empty">还没有动态</li>';
+
+  tickCooldowns();
+}
+
+function tickCooldowns() {
+  const now = Date.now();
+  for (const button of document.querySelectorAll('[data-action]')) {
+    const key = button.dataset.action;
+    const readyAt = state.cooldowns[key] || 0;
+    // cooldowns 是「剩余毫秒」；每次 tick 递减，避免依赖服务端时钟
+    state.cooldowns[key] = Math.max(0, readyAt - 1000);
+    const remain = state.cooldowns[key];
+    if (remain > 0) {
+      button.disabled = true;
+      const seconds = Math.ceil(remain / 1000);
+      const label = state.actions.find((item) => item.key === key)?.label ?? key;
+      button.textContent = seconds >= 60
+        ? `${label} · ${Math.ceil(seconds / 60)} 分`
+        : `${label} · ${seconds} 秒`;
+    } else {
+      button.disabled = false;
+      button.textContent = state.actions.find((item) => item.key === key)?.label ?? key;
+    }
+  }
+}
+
+async function load() {
+  try {
+    const r = await fetch(`${API}/api/state`);
+    const data = await r.json();
+    state.actions = data.actions || [];
+    apply(data.pet, data.derived, { cooldowns: data.derived?.cooldowns, sprite: data.sprite });
+    show(data.active ? '网页在线：宠物卡片在屏上时，确认=摸摸、上=喂食、下=玩耍。' : '宠物卡片在屏上时：确认=摸摸（6 种动作轮着来）、上=喂食、下=玩耍。');
+  } catch (err) {
+    show('状态读取失败，请稍后重试', 'err');
+  }
+}
+
+function bust() {
+  $('shot').src = `${API}/api/preview.png?t=${Date.now()}`;
+}
+
+async function act(action) {
+  actionHint('正在互动…');
+  try {
+    const r = await fetch(`${API}/api/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, push: true }),
+    });
+    const data = await r.json();
+    if (!data.ok) {
+      actionHint(data.error || '互动失败', 'err');
+      return;
+    }
+    apply(data.pet, data.derived, { sprite: data.sprite });
+    actionHint(`${data.message}${data.pushed ? ' 已推到设备。' : data.error ? ` 未推送：${data.error}` : ''}`,
+      data.pushed ? 'ok' : '');
+    bust();
+  } catch (err) {
+    actionHint('网络异常，互动没有完成', 'err');
+  }
+}
+
+$('pushBtn').onclick = async () => {
+  $('pushBtn').disabled = true;
+  show('正在推送，等待设备确认…');
+  try {
+    const r = await fetch(`${API}/api/push`, { method: 'POST' });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || '推送失败');
+    show(`设备已确认显示（${data.lastPush?.ms ?? 0}ms）`, 'ok');
+    apply(data.pet, data.derived, { sprite: data.sprite });
+    bust();
+  } catch (err) {
+    show(`推送失败：${err.message}`, 'err');
+  } finally {
+    $('pushBtn').disabled = false;
+  }
+};
+
+$('refreshBtn').onclick = () => {
+  bust();
+  show('预览已更新');
+};
+
+$('saveName').onclick = async () => {
+  const name = $('nameInput').value.trim();
+  if (!name) { show('名字不能为空', 'err'); return; }
+  try {
+    const r = await fetch(`${API}/api/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || '保存失败');
+    apply(data.pet, state.derived, { sprite: data.sprite });
+    bust();
+    show('名字已保存', 'ok');
+  } catch (err) {
+    show(`保存失败：${err.message}`, 'err');
+  }
+};
+
+$('overlayToggle').onchange = async () => {
+  const overlay = $('overlayToggle').checked;
+  try {
+    const r = await fetch(`${API}/api/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ overlay }),
+    });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || '保存失败');
+    $('overlayHint').textContent = overlay
+      ? '徽章为 88×40，柯基表情 + 等级 + 心情条。'
+      : '已关闭：其他应用推图保持原样。';
+  } catch (err) {
+    $('overlayToggle').checked = !overlay;
+    $('overlayHint').textContent = `保存失败：${err.message}`;
+  }
+};
+
+for (const button of document.querySelectorAll('[data-action]')) {
+  button.onclick = () => act(button.dataset.action);
+}
+
+// 页面在线期间接管设备按键（确认=摸摸、上=喂食、下=玩耍）
+fetch(`${API}/api/arm`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ active: true }),
+}).catch(() => {});
+window.addEventListener('pagehide', () => {
+  fetch(`${API}/api/arm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ active: false }),
+    keepalive: true,
+  }).catch(() => {});
+});
+
+// 设备按键互动后，状态已经被服务端改了，这里收到事件就刷新
+try {
+  const source = new EventSource('/api/events');
+  source.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === 'key' && data.key === 'confirm') setTimeout(load, 800);
+    } catch { /* 忽略非 JSON 事件 */ }
+  };
+} catch { /* 浏览器不支持 SSE 时靠轮询 */ }
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) { load(); bust(); }
+});
+setInterval(() => { if (!document.hidden) { load(); tickCooldowns(); } }, 60000);
+setInterval(tickCooldowns, 1000);
+
+load();
+</script>
+</body>
+</html>

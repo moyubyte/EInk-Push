@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<title>设备 · EInkPush</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --faint: #86868b;
+    --line: #e5e5ea;
+    --accent: #0071e3;
+    --accent-hover: #0077ed;
+    --ok: #34c759;
+    --err: #d70015;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --container: 980px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+      "PingFang SC", "Helvetica Neue", "Microsoft YaHei", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  button, input, select { font: inherit; }
+  :focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.3); }
+
+  /* 顶部导航 + tab */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(255, 255, 255, 0.86);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  .nav-inner {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .brand {
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .brand:hover { text-decoration: none; }
+  .tabs {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.05);
+    justify-self: center;
+  }
+  .tab {
+    padding: 7px 18px;
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 14px;
+    white-space: nowrap;
+    transition: color 0.25s var(--ease), background-color 0.25s var(--ease);
+  }
+  .tab:hover { color: var(--text); text-decoration: none; }
+  .tab[aria-current="page"] {
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #c7c7cc;
+    flex: none;
+    transition: background-color 0.4s var(--ease);
+  }
+  .dot.on { background: var(--ok); }
+
+  /* 页面标题 */
+  .page-head {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 72px 24px 44px;
+  }
+  .page-head h1 {
+    margin: 0 0 14px;
+    font-size: clamp(34px, 4.4vw, 48px);
+    line-height: 1.1;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+  .page-head p {
+    margin: 0;
+    max-width: 620px;
+    color: var(--muted);
+    font-size: 17px;
+    line-height: 1.55;
+  }
+
+  /* 卡片与区块 */
+  .section {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 24px 24px;
+  }
+  .section-head { margin-bottom: 18px; }
+  .section-head h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .section-head p {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  /* 瀑布流：列式排布，不同高度的卡片紧贴上一张，不再被行高拉出空白 */
+  .masonry {
+    column-count: 2;
+    column-gap: 20px;
+  }
+  .masonry > .card {
+    width: 100%;
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    margin: 0 0 20px;
+  }
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 30px;
+  }
+  .card-head { margin-bottom: 20px; }
+  .card-head h3 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .card-head p {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  /* 表单 */
+  .field { display: grid; gap: 8px; }
+  .field-label { color: var(--muted); font-size: 13px; }
+  .input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+    transition: background-color 0.3s var(--ease), border-color 0.3s var(--ease),
+      box-shadow 0.3s var(--ease);
+  }
+  .input::placeholder { color: #9a9a9f; }
+  .input:focus {
+    background: var(--surface);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.15);
+    outline: none;
+  }
+  .input-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 15px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+  .hint { margin: 14px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+  .hint.err { color: var(--err); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0 26px;
+    border: 0;
+    border-radius: 999px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.2s var(--ease), color 0.2s var(--ease),
+      box-shadow 0.2s var(--ease), transform 0.2s var(--ease);
+  }
+  .btn:hover { text-decoration: none; }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary { background: var(--bg); color: var(--text); }
+  .btn-secondary:hover { background: #ebebef; }
+  .btn-sm { min-height: 36px; padding: 0 16px; font-size: 14px; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  .font-choice { display: flex; flex-wrap: wrap; gap: 8px; }
+  .font-chip {
+    padding: 10px 18px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s var(--ease), color 0.3s var(--ease), transform 0.3s var(--ease);
+  }
+  .font-chip:hover { background: #ececef; }
+  .font-chip:active { transform: scale(0.98); }
+  .font-chip[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  .font-chip[disabled] { color: #9a9a9f; cursor: not-allowed; opacity: 0.6; }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 20px;
+  }
+  .stat { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .stat span { color: var(--muted); font-size: 12px; }
+  .stat strong { font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
+  .stat strong.muted { color: var(--muted); font-weight: 400; }
+
+  /* 推送 */
+  .push-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .file-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 20px;
+    border-radius: 999px;
+    background: var(--bg);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s var(--ease), transform 0.2s var(--ease);
+  }
+  .file-pill:hover { background: #ebebef; }
+  .file-pill:active { transform: scale(0.96); }
+  .file-pill:focus-within { box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.3); }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .file-name {
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .select-wrap { display: inline-flex; align-items: center; gap: 8px; }
+  .select-wrap label { color: var(--muted); font-size: 14px; }
+  .select { width: auto; padding: 11px 14px; font-size: 14px; }
+
+  /* 事件日志 */
+  .log {
+    margin: 0;
+    padding: 18px 20px;
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    color: #3a3a3c;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px;
+    line-height: 1.75;
+    max-height: 260px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  footer {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+    color: var(--faint);
+    font-size: 13px;
+    line-height: 1.8;
+    text-align: center;
+  }
+  footer strong { color: var(--muted); font-weight: 500; }
+
+  @media (max-width: 860px) {
+    .masonry { column-count: 1; }
+  }
+  @media (max-width: 720px) {
+    .nav-inner { gap: 12px; padding: 0 16px; }
+    .brand { font-size: 17px; }
+    .status-pill { display: none; }
+    .tab { padding: 6px 13px; font-size: 13px; }
+    .page-head { padding: 52px 20px 32px; }
+    .section { padding: 0 20px 20px; }
+    .card { padding: 24px 20px; }
+    .stat-grid { grid-template-columns: 1fr; }
+    .file-name { max-width: 140px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    .btn:active, .file-pill:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/">EInkPush</a>
+    <div class="tabs">
+      <a class="tab" href="/">首页</a>
+      <a class="tab" href="/device" aria-current="page">设备</a>
+      <a class="tab" href="/apps">应用</a>
+    </div>
+    <span class="status-pill" role="status">
+      <span class="dot" id="connDot"></span>
+      <span id="connText">检测中…</span>
+    </span>
+  </div>
+</nav>
+
+<header class="page-head">
+  <h1>设备</h1>
+  <p>连接墨水屏，调整推图字体与语音服务。这些设置对全部应用生效，改一次即可。</p>
+</header>
+
+<main>
+  <section class="section">
+    <div class="masonry">
+      <div class="card">
+        <div class="card-head">
+          <h3>连接设备</h3>
+          <p>填写局域网地址，端口留空则使用默认 32342。</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="deviceInput">设备地址</label>
+          <input class="input input-mono" type="text" id="deviceInput"
+            placeholder="192.168.1.100 或 zectrix-note4.local"
+            spellcheck="false" autocomplete="off">
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary btn-sm" id="saveConnectBtn">保存并连接</button>
+          <button class="btn btn-secondary btn-sm" id="saveBtn">仅保存</button>
+        </div>
+        <p class="hint" id="cfgHint" aria-live="polite">端口留空则用默认 32342。</p>
+
+        <div class="field" style="margin-top:26px">
+          <span class="field-label">设备图字体</span>
+          <div class="font-choice" id="fontChoice" role="radiogroup" aria-label="设备图字体">
+            <button class="font-chip" type="button" disabled>加载中…</button>
+          </div>
+        </div>
+        <p class="hint" id="fontHint" aria-live="polite">只影响推送到墨水屏的图片。</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>设备状态</h3>
+          <p>每 30 秒自动刷新一次。</p>
+        </div>
+        <div class="stat-grid" id="statusBox">
+          <div class="stat"><span>状态</span><strong class="muted">读取中…</strong></div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-secondary btn-sm" id="refreshBtn">刷新状态</button>
+          <button class="btn btn-secondary btn-sm" id="stopBtn">停止播放 / 录音</button>
+          <button class="btn btn-secondary btn-sm" id="closeBtn">断开设备</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>推送图片</h3>
+          <p>提交连续色调 PNG，服务端按设备色板量化并抖色。推荐 400 × 300。</p>
+        </div>
+        <div class="push-row">
+          <label class="file-pill" for="file">
+            <input class="visually-hidden" type="file" id="file" accept="image/png">
+            选择 PNG
+          </label>
+          <span class="file-name" id="fileName">尚未选择文件</span>
+        </div>
+        <div class="push-row" style="margin-top:14px">
+          <span class="select-wrap">
+            <label for="format">位深</label>
+            <select class="input select" id="format">
+              <option value="gray16" selected>gray16 十六灰（推荐）</option>
+              <option value="gray4">gray4 四灰</option>
+              <option value="mono">mono 黑白</option>
+            </select>
+          </span>
+          <button class="btn btn-primary btn-sm" id="pushBtn">推送</button>
+        </div>
+        <p class="hint">推送成功代表设备已确认物理显示完成。</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>按键事件</h3>
+          <p>通过 SSE 实时接收按键、录音与连接变化。</p>
+        </div>
+        <pre class="log" id="log" aria-live="polite">等待事件…</pre>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>朗读（TTS）</h3>
+          <p>Edge 在线合成，音色可选，不需要密钥，也不占 NAS 算力。</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="ttsVoice">音色</label>
+          <select class="input select" id="ttsVoice" style="width:100%" disabled>
+            <option>加载中…</option>
+          </select>
+        </div>
+        <div class="actions">
+          <button class="btn btn-secondary btn-sm" id="testTtsBtn">试听「apple」</button>
+        </div>
+        <audio id="ttsPlayer" controls preload="none" style="display:none;width:100%;margin-top:14px"></audio>
+        <p class="hint" id="ttsHint" aria-live="polite">试听只合成不推设备，用来确认服务器能访问 Edge TTS。</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>识别（ASR）</h3>
+          <p>支持 OpenAI 兼容的转写接口；不配置时依赖语音的应用会自动降级。</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="asrBaseUrl">供应商地址</label>
+          <input class="input input-mono" type="text" id="asrBaseUrl"
+            placeholder="https://api.openai.com/v1" spellcheck="false" autocomplete="off">
+        </div>
+        <div class="field" style="margin-top:14px">
+          <label class="field-label" for="asrModel">模型</label>
+          <input class="input input-mono" type="text" id="asrModel" placeholder="whisper-1" spellcheck="false">
+        </div>
+        <div class="field" style="margin-top:14px">
+          <label class="field-label" for="asrApiKey">密钥</label>
+          <input class="input input-mono" type="password" id="asrApiKey" placeholder="sk-…" autocomplete="off">
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary btn-sm" id="saveSpeechBtn">保存语音配置</button>
+        </div>
+        <p class="hint" id="speechHint" aria-live="polite">地址可写 …/v1 或完整 …/audio/transcriptions，留空表示不启用。</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>访问密码</h3>
+          <p>开启后，打开设备页与应用页都需要先输入密码。初始密码为 helloworld。</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="passwordInput">新密码</label>
+          <input class="input" type="password" id="passwordInput" placeholder="至少 6 位" autocomplete="new-password">
+        </div>
+        <div class="field" style="margin-top:14px">
+          <label class="field-label" for="passwordConfirm">确认新密码</label>
+          <input class="input" type="password" id="passwordConfirm" autocomplete="new-password">
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary btn-sm" id="savePasswordBtn">修改密码</button>
+        </div>
+        <p class="hint" id="passwordHint" aria-live="polite">修改后其他设备/浏览器需要重新登录，当前页面会自动保持登录。</p>
+
+        <div class="field" style="margin-top:26px">
+          <label class="field-label" for="authToken">API 令牌（密码哈希）</label>
+          <input class="input input-mono" type="text" id="authToken" readonly spellcheck="false">
+        </div>
+        <p class="hint">API 可在地址后加 ?token=令牌 直接调用，例如 /api/show?token=…。令牌等同密码，请勿外传。</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <strong>EInkPush</strong> · 局域网墨水屏推送服务
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (value) => String(value ?? '').replace(/[&<>"]/g, (c) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
+}[c]));
+
+const log = (line) => {
+  const box = $('log');
+  if (box.textContent === '等待事件…') box.textContent = '';
+  box.textContent += new Date().toLocaleTimeString() + '  ' + line + '\n';
+  box.scrollTop = box.scrollHeight;
+};
+
+const SOURCE_LABEL = { file: '页面配置', startup: '启动参数 / 环境变量', none: '未配置' };
+
+function hint(text, isError) {
+  const el = $('cfgHint');
+  el.textContent = text;
+  el.className = 'hint' + (isError ? ' err' : '');
+}
+
+function stat(label, value, muted) {
+  return `<div class="stat"><span>${esc(label)}</span><strong${muted ? ' class="muted"' : ''}>${esc(value)}</strong></div>`;
+}
+
+function renderFontChoice(options, current) {
+  const box = $('fontChoice');
+  if (!Array.isArray(options) || !options.length) {
+    box.innerHTML = '<button class="font-chip" type="button" disabled>无可选字体</button>';
+    return;
+  }
+  box.innerHTML = options.map((item) => {
+    const note = item.note ? ` title="${esc(item.note)}"` : '';
+    const disabled = item.available ? '' : ' disabled';
+    return `<button class="font-chip" type="button" data-font="${esc(item.key)}" aria-pressed="${item.key === current}"${note}${disabled}>${esc(item.name)}</button>`;
+  }).join('');
+  box.querySelectorAll('.font-chip').forEach((btn) => {
+    btn.onclick = () => chooseFont(btn.dataset.font);
+  });
+  const active = options.find((item) => item.key === current);
+  $('fontHint').textContent = '只影响推送到墨水屏的图片，换完后回到应用页刷新预览。'
+    + (active ? `当前：${active.name}（${active.note}）` : '');
+}
+
+async function chooseFont(key) {
+  if (!key) return;
+  try {
+    const r = await fetch('/api/font', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ font: key }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!j.ok) {
+      $('fontHint').textContent = '切换失败：' + (j.error || r.status);
+      return;
+    }
+    renderFontChoice(j.available, j.font);
+    log('设备字体已切换为 ' + j.font + (j.warning ? '（' + j.warning + '）' : ''));
+  } catch (e) {
+    $('fontHint').textContent = '切换异常：' + e.message;
+  }
+}
+
+function speechHint(text, isError) {
+  const el = $('speechHint');
+  el.textContent = text;
+  el.className = 'hint' + (isError ? ' err' : '');
+}
+
+function ttsHint(text, isError) {
+  const el = $('ttsHint');
+  el.textContent = text;
+  el.className = 'hint' + (isError ? ' err' : '');
+}
+
+/** 音色按语言分组（中文在前，English 在后），value 仍是 Edge 的 voice id */
+function renderVoices(voices, current) {
+  const groups = new Map();
+  for (const voice of voices ?? []) {
+    const family = String(voice.lang ?? voice.id).startsWith('zh') ? '中文' : 'English';
+    if (!groups.has(family)) groups.set(family, []);
+    groups.get(family).push(voice);
+  }
+  const select = $('ttsVoice');
+  select.innerHTML = [...groups].map(([label, list]) => `
+    <optgroup label="${esc(label)}">
+      ${list.map((voice) => `<option value="${esc(voice.id)}">${esc(voice.name)}</option>`).join('')}
+    </optgroup>`).join('');
+  select.value = current;
+  select.disabled = false;
+}
+
+async function loadSpeech() {
+  try {
+    const r = await fetch('/api/speech');
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || r.status);
+    $('asrBaseUrl').value = j.config.asrBaseUrl ?? '';
+    $('asrModel').value = j.config.asrModel ?? '';
+    $('asrApiKey').value = j.config.asrApiKey ?? '';
+    renderVoices(j.voices, j.config.ttsVoice);
+    speechHint(`当前：ASR ${j.asrReady ? '已启用' : '未配置'} · TTS 音色 ${j.config.ttsVoice}`);
+  } catch (e) {
+    $('ttsVoice').innerHTML = '<option>读取失败</option>';
+    speechHint('读取语音配置失败：' + e.message, true);
+  }
+}
+
+function passwordHint(text, isError) {
+  const el = $('passwordHint');
+  el.textContent = text;
+  el.className = 'hint' + (isError ? ' err' : '');
+}
+
+async function savePassword() {
+  const password = $('passwordInput').value;
+  if (password.length < 6) return passwordHint('密码至少 6 位', true);
+  if (password !== $('passwordConfirm').value) return passwordHint('两次输入的密码不一致', true);
+  $('savePasswordBtn').disabled = true;
+  try {
+    const r = await fetch('/api/password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!j.ok) {
+      passwordHint('修改失败：' + (j.error || r.status), true);
+      return;
+    }
+    $('authToken').value = j.token;
+    $('passwordInput').value = '';
+    $('passwordConfirm').value = '';
+    passwordHint(j.persisted
+      ? '密码已保存，其他设备上的登录已失效。'
+      : '已生效但未能落盘：' + (j.warning || ''), !j.persisted);
+  } catch (e) {
+    passwordHint('修改异常：' + e.message, true);
+  } finally {
+    $('savePasswordBtn').disabled = false;
+  }
+}
+
+async function loadConfig() {
+  try {
+    const r = await fetch('/api/config');
+    const c = await r.json();
+    $('deviceInput').value = c.device || '';
+    $('authToken').value = c.authToken || '';
+    renderFontChoice(c.fonts, c.font);
+    if (c.device) {
+      hint(`当前生效：${c.address}（来源：${SOURCE_LABEL[c.source] || c.source}）。端口留空则用默认 ${c.defaultPort}。`);
+    } else {
+      hint(`尚未配置设备地址。端口留空则用默认 ${c.defaultPort}，可在路由器上给设备做 DHCP 保留。`);
+    }
+  } catch (e) {
+    hint('读取配置失败：' + e.message, true);
+  }
+}
+
+async function saveConfig(alsoConnect) {
+  const device = $('deviceInput').value.trim();
+  if (!device) return hint('请先填写设备地址', true);
+  $('saveBtn').disabled = true;
+  $('saveConnectBtn').disabled = true;
+  try {
+    const r = await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!j.ok) return hint('保存失败：' + (j.error || r.status), true);
+    $('deviceInput').value = j.device;
+    hint(j.persisted ? '已保存：' + j.address : '已生效但未能落盘：' + (j.warning || ''), !j.persisted);
+    log('设备地址已更新为 ' + j.address);
+
+    if (alsoConnect) {
+      hint('正在连接 ' + j.address + ' …');
+      const cr = await fetch('/api/connect', { method: 'POST' });
+      const cj = await cr.json().catch(() => ({}));
+      if (cj.ok) {
+        hint('连接成功：' + (cj.summary?.model || '设备') + ' (' + (cj.summary?.id || '—') + ') @ ' + cj.address);
+        log('已连接设备 ' + (cj.summary?.id || ''));
+      } else {
+        hint('已保存，但连接失败：' + (cj.error || cr.status), true);
+        log('连接失败：' + (cj.error || cr.status));
+      }
+    }
+    refreshStatus();
+  } catch (e) {
+    hint('保存异常：' + e.message, true);
+  } finally {
+    $('saveBtn').disabled = false;
+    $('saveConnectBtn').disabled = false;
+  }
+}
+
+async function refreshStatus() {
+  try {
+    const r = await fetch('/api/status');
+    const s = await r.json();
+    const address = s.address || s.device || '未配置';
+    $('connDot').className = 'dot ' + (s.connected ? 'on' : '');
+    $('connText').textContent = s.connected ? '已连接 ' + (s.summary?.id || '') : '未连接';
+    const st = s.status;
+    $('statusBox').innerHTML = s.connected
+      ? stat('设备', `${s.summary?.model || '—'} (${s.summary?.id || '—'})`)
+        + stat('地址', address)
+        + stat('电量', st ? `${st.batteryPercent ?? '未知'}%${st.charging ? ' · 充电中' : ''}` : '查询失败')
+        + stat('Wi-Fi', st ? `${st.wifiRssiDbm ?? '未知'} dBm` : '—')
+      : stat('目标设备', address, !s.device)
+        + stat('地址来源', SOURCE_LABEL[s.deviceSource] || s.deviceSource || '—')
+        + stat('状态', s.lastError ? '未连接 · ' + s.lastError : '未连接');
+  } catch (e) {
+    log('状态请求失败：' + e.message);
+  }
+}
+
+$('saveSpeechBtn').onclick = async () => {
+  const btn = $('saveSpeechBtn');
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/speech', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ttsVoice: $('ttsVoice').value,
+        asrBaseUrl: $('asrBaseUrl').value.trim() || null,
+        asrModel: $('asrModel').value.trim() || null,
+        asrApiKey: $('asrApiKey').value.trim() || null,
+      }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!j.ok) return speechHint('保存失败：' + (j.error || r.status), true);
+    speechHint(`已保存：ASR ${j.asrReady ? '已启用' : '未配置'} · TTS 音色 ${j.config.ttsVoice}`);
+    log('语音配置已更新：' + j.config.ttsVoice);
+  } catch (e) {
+    speechHint('保存异常：' + e.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+$('testTtsBtn').onclick = async () => {
+  const btn = $('testTtsBtn');
+  btn.disabled = true;
+  ttsHint('正在合成「apple」…');
+  try {
+    const r = await fetch('/api/speech/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: 'apple' }),
+    });
+    const j = await r.json().catch(() => ({}));
+    ttsHint(j.ok
+      ? `合成成功：${(j.samples / 16000).toFixed(2)} 秒音频 · ${j.ms}ms · ${j.voice}`
+      : (j.error || '合成失败'), !j.ok);
+    if (j.ok && j.audio) {
+      const player = $('ttsPlayer');
+      player.src = j.audio;
+      player.style.display = 'block';
+      player.play().catch(() => {
+        // 浏览器拦截自动播放时，用户仍可直接点播放器
+      });
+    }
+  } catch (e) {
+    ttsHint('试听异常：' + e.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+$('refreshBtn').onclick = refreshStatus;
+$('saveBtn').onclick = () => saveConfig(false);
+$('saveConnectBtn').onclick = () => saveConfig(true);
+$('deviceInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') saveConfig(true);
+});
+$('file').addEventListener('change', () => {
+  const file = $('file').files[0];
+  $('fileName').textContent = file ? file.name : '尚未选择文件';
+});
+
+$('stopBtn').onclick = async () => {
+  const r = await fetch('/api/stop', { method: 'POST' });
+  const j = await r.json().catch(() => ({}));
+  log(j.ok ? (j.target ? '已停止流 #' + j.target : '当前没有播放或录音') : '停止失败：' + (j.error || r.status));
+};
+
+$('closeBtn').onclick = async () => {
+  await fetch('/api/close', { method: 'POST' });
+  setTimeout(refreshStatus, 300);
+};
+
+$('pushBtn').onclick = async () => {
+  const file = $('file').files[0];
+  if (!file) return log('请先选择 PNG 文件');
+  $('pushBtn').disabled = true;
+  log('推送中（等待设备确认显示完成）…');
+  try {
+    const r = await fetch('/api/show?format=' + $('format').value, { method: 'POST', body: file });
+    const j = await r.json();
+    log(j.ok ? '推送成功：' + j.message : '推送失败：' + j.error);
+  } catch (e) {
+    log('推送异常：' + e.message);
+  }
+  $('pushBtn').disabled = false;
+};
+
+const es = new EventSource('/api/events');
+es.onmessage = (e) => {
+  const ev = JSON.parse(e.data);
+  if (ev.type === 'hello') { (ev.events || []).forEach(h => log(JSON.stringify(h))); return; }
+  if (ev.type === 'key') log('按键：' + ev.key + ' / ' + ev.action);
+  else if (ev.type === 'recording') log(`录音完成：id=${ev.id} ${ev.durationMs ?? 0}ms samples=${ev.samples} reason=${ev.reason}`
+    + (ev.lostFrames ? ` 丢帧=${ev.lostFrames}` : '') + (ev.url ? ` → ${ev.url}` : ''));
+  else if (ev.type === 'disconnected') log('连接断开：' + ev.reason);
+  else if (ev.type === 'connected') log('已连接设备：' + (ev.id || '') + ' ' + (ev.model || ''));
+  else if (ev.type === 'deviceChanged') { log('设备地址已改为：' + ev.device); loadConfig(); }
+  else log(JSON.stringify(ev));
+};
+
+$('savePasswordBtn').onclick = savePassword;
+loadConfig();
+loadSpeech();
+refreshStatus();
+setInterval(refreshStatus, 30000);
+</script>
+</body>
+</html>

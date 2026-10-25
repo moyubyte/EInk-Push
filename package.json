@@ -1,0 +1,36 @@
+{
+  "name": "zectrix-node-push",
+  "version": "0.4.4",
+  "description": "ZECTRIX LAN v1 协议 Node.js 客户端、NAS Web 推送服务与墨水屏应用（今天 / 背单词）",
+  "type": "module",
+  "main": "src/index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test test/*.test.js",
+    "build:wordbook": "node scripts/build-ielts-wordbook.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "zectrix",
+    "epaper",
+    "eink",
+    "lan",
+    "udp"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@napi-rs/canvas": "^1.0.13",
+    "cheerio": "^1.2.0",
+    "express": "^5.3.0",
+    "node-cron": "^4.6.0",
+    "opusscript": "^0.1.1",
+    "sharp": "^0.35.5",
+    "undici": "^7.30.1"
+  }
+}

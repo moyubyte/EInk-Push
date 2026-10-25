@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<title>EInkPush · 墨水屏控制台</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --faint: #86868b;
+    --line: #e5e5ea;
+    --accent: #0071e3;
+    --accent-hover: #0077ed;
+    --radius-lg: 20px;
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --container: 1040px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+      "PingFang SC", "Helvetica Neue", "Microsoft YaHei", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  :focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.3); }
+
+  /* 顶部导航 + tab */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(255, 255, 255, 0.86);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  .nav-inner {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .brand {
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .brand:hover { text-decoration: none; }
+  .tabs {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.05);
+  }
+  .tab {
+    padding: 7px 18px;
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 14px;
+    white-space: nowrap;
+    transition: color 0.25s var(--ease), background-color 0.25s var(--ease);
+  }
+  .tab:hover { color: var(--text); text-decoration: none; }
+  .tab[aria-current="page"] {
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  .nav-tail { width: 76px; }
+
+  /* Hero：左文案 + 右墨水屏真机预览 */
+  .hero {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 88px 24px 72px;
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    align-items: center;
+    gap: 56px;
+  }
+  .hero-copy h1 {
+    margin: 0 0 24px;
+    font-size: clamp(44px, 6vw, 74px);
+    line-height: 1.02;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+  }
+  .hero-copy p {
+    max-width: 460px;
+    margin: 0 0 34px;
+    color: var(--muted);
+    font-size: clamp(16px, 1.6vw, 19px);
+    line-height: 1.6;
+  }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0 26px;
+    border: 0;
+    border-radius: 999px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.2s var(--ease), color 0.2s var(--ease),
+      box-shadow 0.2s var(--ease), transform 0.2s var(--ease);
+  }
+  .btn:hover { text-decoration: none; }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary { background: var(--surface); color: var(--text); box-shadow: var(--shadow-md); }
+  .btn-secondary:hover { background: #fff; }
+
+  /* 墨水屏设备外观 */
+  .device {
+    width: 100%;
+    max-width: 420px;
+    margin-left: auto;
+    padding: 12px;
+    border-radius: 26px;
+    background: linear-gradient(160deg, #3a3a3c 0%, #1c1c1e 60%, #101012 100%);
+    box-shadow: 0 28px 60px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+  .device-screen {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-radius: 13px;
+    overflow: hidden;
+    background: #fbfbf9;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  }
+  .device-screen img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.8s var(--ease);
+  }
+  .device-screen img.active { opacity: 1; }
+  .device-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 6px 1px;
+    color: #a1a1a6;
+    font-size: 12px;
+    letter-spacing: 0.01em;
+  }
+  .device-name { color: #f5f5f7; font-weight: 500; }
+  .device-dots { display: flex; gap: 5px; }
+  .device-dots span {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #48484a;
+    transition: background-color 0.4s var(--ease);
+  }
+  .device-dots span.on { background: #f5f5f7; }
+  /* 设备框下的小字：支持的设备型号 */
+  .hero-device { width: 100%; max-width: 420px; margin-left: auto; }
+  .device-caption {
+    margin: 10px 0 0;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+
+  /* 原则：hairline 分栏，不用卡片 */
+  .principles {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--line);
+  }
+  .principle { padding: 30px 32px 0 0; }
+  .principle + .principle { padding-left: 32px; border-left: 1px solid var(--line); }
+  .principle h2 {
+    margin: 0 0 8px;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+  .principle p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.65; }
+
+  /* 区块 */
+  .section {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 88px 24px 0;
+  }
+  .section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+  .section-head h2 {
+    margin: 0;
+    font-size: clamp(28px, 3.4vw, 40px);
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+  .section-head p { margin: 8px 0 0; color: var(--muted); font-size: 16px; }
+  .section-link { font-size: 15px; white-space: nowrap; }
+
+  /* 应用卡片：瀑布流列式排布，高度不一致也不会拉出空白 */
+  .apps {
+    columns: 240px;
+    column-gap: 16px;
+  }
+  .app-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 26px;
+    margin: 0 0 16px;
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    color: var(--text);
+    text-decoration: none;
+    transition: box-shadow 0.5s var(--ease), transform 0.5s var(--ease);
+  }
+  .app-card:hover { box-shadow: var(--shadow-lg); text-decoration: none; }
+  .app-card:active { transform: scale(0.98); }
+  .app-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--text);
+    transition: transform 0.5s var(--ease);
+  }
+  .app-icon svg { width: 22px; height: 22px; display: block; }
+  .app-card:hover .app-icon { transform: scale(1.05); }
+  .app-name { font-size: 18px; font-weight: 600; letter-spacing: -0.015em; }
+  .app-desc {
+    margin: -6px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.55;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .app-open {
+    margin-top: auto;
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .app-open span { transition: transform 0.4s var(--ease); }
+  .app-card:hover .app-open span { transform: translateX(3px); }
+  .apps-hint {
+    column-span: all;
+    margin: 4px 0 0;
+    color: var(--faint);
+    font-size: 14px;
+    text-align: center;
+  }
+
+  /* 三步开始 */
+  .start {
+    max-width: var(--container);
+    margin: 0 auto 0;
+    padding: 88px 24px 0;
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: 56px;
+    align-items: start;
+  }
+  .start-copy h2 {
+    margin: 0 0 12px;
+    font-size: clamp(28px, 3.4vw, 40px);
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+  .start-copy p { margin: 0 0 22px; color: var(--muted); font-size: 16px; line-height: 1.6; }
+  .start-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+  .start-list li {
+    display: flex;
+    gap: 22px;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .start-list .num {
+    flex: none;
+    padding-top: 2px;
+    color: var(--faint);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+  .start-list h3 { margin: 0 0 4px; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+  .start-list p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+  footer {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 88px 24px 80px;
+    color: var(--faint);
+    font-size: 13px;
+    line-height: 1.8;
+    text-align: center;
+  }
+  footer strong { color: var(--muted); font-weight: 500; }
+
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; gap: 44px; padding-top: 64px; }
+    .hero-copy p { max-width: 560px; }
+    .device { margin: 0 auto; max-width: 380px; }
+    .start { grid-template-columns: 1fr; gap: 28px; }
+    .principles { grid-template-columns: 1fr; }
+    .principle { padding: 24px 0 0; }
+    .principle + .principle { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); margin-top: 24px; }
+  }
+  @media (max-width: 720px) {
+    .nav-inner { gap: 12px; padding: 0 16px; }
+    .brand { font-size: 17px; }
+    .nav-tail { display: none; }
+    .tab { padding: 6px 13px; font-size: 13px; }
+    .hero { padding: 52px 20px 56px; }
+    .section, .start { padding-left: 20px; padding-right: 20px; padding-top: 64px; }
+    .principles { padding: 0 20px; }
+    .section-head { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .app-card { padding: 24px 20px; }
+    footer { padding: 64px 20px 64px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    .btn:active, .app-card:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/">EInkPush</a>
+    <div class="tabs">
+      <a class="tab" href="/" aria-current="page">首页</a>
+      <a class="tab" href="/device">设备</a>
+      <a class="tab" href="/apps">应用</a>
+    </div>
+    <span class="nav-tail" aria-hidden="true"></span>
+  </div>
+</nav>
+
+<main>
+  <section class="hero">
+    <div class="hero-copy">
+      <h1>一块屏幕<br>装下今天。</h1>
+      <p>晨报、雅思单词、今天的晚饭、一条人生建议。它们在 NAS 上生成，经局域网直接落到墨水屏，不经过任何云端。</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="/apps">浏览应用</a>
+        <a class="btn btn-secondary" href="/device">连接设备</a>
+      </div>
+    </div>
+
+    <div class="hero-device">
+      <div class="device">
+        <div class="device-screen" id="heroScreen">
+          <img data-app="today" src="/apps/today/api/preview.png" alt="今天在墨水屏上的预览" class="active">
+          <img data-app="vocabulary" src="/apps/vocabulary/api/preview.png" alt="背单词在墨水屏上的预览">
+          <img data-app="what-to-eat" src="/apps/what-to-eat/api/preview.png" alt="今天吃什么在墨水屏上的预览">
+          <img data-app="life-guide" src="/apps/life-guide/api/preview.png" alt="人生指南在墨水屏上的预览">
+          <img data-app="pet" src="/apps/pet/api/preview.png" alt="宠物在墨水屏上的预览">
+          <img data-app="jiaobei" src="/apps/jiaobei/api/preview.png" alt="掷杯筊在墨水屏上的预览">
+        </div>
+        <div class="device-foot">
+          <span class="device-name" id="heroLabel">今天</span>
+          <span class="device-dots" id="heroDots" aria-hidden="true"></span>
+        </div>
+      </div>
+      <p class="device-caption">支持设备：ZECTRIX Note 4 · 400×300 墨水屏</p>
+    </div>
+  </section>
+
+  <section class="principles">
+    <div class="principle">
+      <h2>只走局域网</h2>
+      <p>图片与音频留在你的网络里，设备管理权集中在 NAS 上的同一个进程。</p>
+    </div>
+    <div class="principle">
+      <h2>应用即卡片</h2>
+      <p>每个应用自己作画、独立配置，共享同一条设备连接和同一块屏幕。</p>
+    </div>
+    <div class="principle">
+      <h2>一天一条</h2>
+      <p>内容按需更新，屏幕保持纸一样的静态显示，不打扰、不发光、不耗电。</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <h2>应用</h2>
+        <p>打开一个，就能预览并推送到设备。</p>
+      </div>
+      <a class="section-link" href="/apps">全部应用 →</a>
+    </div>
+    <div class="apps" id="appLinks">
+      <p class="apps-hint">加载中…</p>
+    </div>
+  </section>
+
+  <section class="start">
+    <div class="start-copy">
+      <h2>三步开始</h2>
+      <p>不用装客户端，也不用注册。浏览器就是控制台。</p>
+      <a class="btn btn-secondary" href="/device">打开设备页</a>
+    </div>
+    <ol class="start-list">
+      <li>
+        <span class="num">01</span>
+        <div>
+          <h3>填一个地址</h3>
+          <p>写下墨水屏的局域网地址，端口留空即可。</p>
+        </div>
+      </li>
+      <li>
+        <span class="num">02</span>
+        <div>
+          <h3>选一个应用</h3>
+          <p>预览今天的卡片，字体与语音都在设备页统一调整。</p>
+        </div>
+      </li>
+      <li>
+        <span class="num">03</span>
+        <div>
+          <h3>推送一屏</h3>
+          <p>点推送，等服务端确认设备已物理显示完成。</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+</main>
+
+<footer>
+  <strong>EInkPush</strong> · 局域网墨水屏推送服务<br>
+  支持 ZECTRIX Note 4 · 图片与音频留在你的网络里，设备管理权集中在同一进程。
+</footer>
+
+<script>
+const esc = (value) => String(value ?? '').replace(/[&<>"]/g, (c) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
+}[c]));
+
+// 每个应用一张线描图标（24×24、stroke 跟随文字色），按应用 id 取用
+const ICON_ATTRS = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+  + 'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+const ICONS = {
+  today: `<svg ${ICON_ATTRS}>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="3"/>
+      <path d="M3.5 9.5h17"/>
+      <path d="M8 3v4"/>
+      <path d="M16 3v4"/>
+      <path d="M8 13h2"/>
+      <path d="M14 13h2"/>
+      <path d="M8 17h2"/>
+      <path d="M14 17h2"/>
+    </svg>`,
+  vocabulary: `<svg ${ICON_ATTRS}>
+      <path d="M12 6.4C10.4 5 8.4 4.4 4.8 4.4v14.2c3.6 0 5.6.6 7.2 2 1.6-1.4 3.6-2 7.2-2V4.4c-3.6 0-5.6.6-7.2 2z"/>
+      <path d="M12 6.4v14.2"/>
+    </svg>`,
+  'what-to-eat': `<svg ${ICON_ATTRS}>
+      <path d="M5 3v6a2.5 2.5 0 0 0 5 0V3"/>
+      <path d="M7.5 11.5V21"/>
+      <path d="M18.5 3c-1.9 1.7-2.8 4-2.8 6.3 0 1.6 1.1 2.7 2.8 2.7"/>
+      <path d="M18.5 3v18"/>
+    </svg>`,
+  'life-guide': `<svg ${ICON_ATTRS}>
+      <circle cx="12" cy="12" r="9"/>
+      <path d="m15.6 8.4-2 5.2-5.2 2 2-5.2z"/>
+    </svg>`,
+  jiaobei: `<svg ${ICON_ATTRS}>
+      <path d="M3.5 14.5C3.5 11.3 5.3 9.2 7.7 9.2s4.2 2.1 4.2 5.3z"/>
+      <path d="M12.1 9.2h8.4c0 3.1-1.9 5.3-4.2 5.3s-4.2-2.2-4.2-5.3z"/>
+    </svg>`,
+  pet: `<svg ${ICON_ATTRS}>
+      <ellipse cx="7.5" cy="9" rx="1.9" ry="2.5"/>
+      <ellipse cx="16.5" cy="9" rx="1.9" ry="2.5"/>
+      <ellipse cx="4.6" cy="13.6" rx="1.7" ry="2.2"/>
+      <ellipse cx="19.4" cy="13.6" rx="1.7" ry="2.2"/>
+      <path d="M12 13.2c-3 0-5 2.3-5 4.4 0 1.8 1.4 3 3.1 3 .9 0 1.3-.4 1.9-.4s1 .4 1.9.4c1.7 0 3.1-1.2 3.1-3 0-2.1-2-4.4-5-4.4z"/>
+    </svg>`,
+  all: `<svg ${ICON_ATTRS}>
+      <rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/>
+      <rect x="13.5" y="3.5" width="7" height="7" rx="1.8"/>
+      <rect x="3.5" y="13.5" width="7" height="7" rx="1.8"/>
+      <rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/>
+    </svg>`,
+};
+
+function iconForApp(id) {
+  return ICONS[id] ?? ICONS.all;
+}
+
+const APP_NAMES = {
+  today: '今天',
+  vocabulary: '背单词',
+  'what-to-eat': '今天吃什么',
+  'life-guide': '人生指南',
+  pet: '宠物',
+  jiaobei: '掷杯筊',
+};
+
+/** 首页设备预览：按顺序淡入各应用的真实预览图，像一台正在换内容的墨水屏 */
+function startDeviceShowcase() {
+  const screen = document.getElementById('heroScreen');
+  const label = document.getElementById('heroLabel');
+  const dots = document.getElementById('heroDots');
+  const shots = [...screen.querySelectorAll('img')].filter((img) => !img.dataset.failed);
+  if (!shots.length) return;
+
+  dots.innerHTML = shots.map(() => '<span></span>').join('');
+  const marks = [...dots.children];
+  let index = 0;
+
+  const show = (next) => {
+    index = next % shots.length;
+    shots.forEach((img, i) => img.classList.toggle('active', i === index));
+    marks.forEach((dot, i) => dot.classList.toggle('on', i === index));
+    label.textContent = APP_NAMES[shots[index].dataset.app] ?? '';
+  };
+
+  shots.forEach((img) => {
+    img.addEventListener('error', () => {
+      img.dataset.failed = '1';
+      if (!img.classList.contains('active')) return;
+      const alive = shots.filter((item) => !item.dataset.failed);
+      if (alive.length) show(shots.indexOf(alive[0]));
+    }, { once: true });
+  });
+
+  show(0);
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  setInterval(() => show(index + 1), 4500);
+}
+
+async function loadApps() {
+  const box = document.getElementById('appLinks');
+  try {
+    const r = await fetch('/api/apps');
+    const data = await r.json();
+    const apps = data.apps ?? [];
+    box.innerHTML = apps.map((app) => `
+      <a class="app-card" href="${esc(app.url)}">
+        <span class="app-icon">${iconForApp(app.id)}</span>
+        <span class="app-name">${esc(app.name)}</span>
+        <span class="app-desc">${esc(app.description ?? '')}</span>
+        <span class="app-open">打开 <span aria-hidden="true">→</span></span>
+      </a>`).join('');
+  } catch {
+    box.innerHTML = '<p class="apps-hint">应用列表加载失败，<a href="/apps">去应用总览看看</a>。</p>';
+  }
+}
+
+startDeviceShowcase();
+loadApps();
+</script>
+</body>
+</html>
