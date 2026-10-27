@@ -38,7 +38,7 @@ npm test
 node src/index.js --web 8080
 ```
 
-打开 `http://<NAS-IP>:8080/`，会跳到登录页，输入初始密码 `helloworld` 即可进入。登录后在「设备」页填设备地址（`192.168.1.100`，端口留空即用默认 32342），点 **保存并连接** 即可。之后推图/播放都不用再碰启动参数。
+打开 `http://<NAS-IP>:8080/`，会跳到登录页，输入初始密码 `helloworld` 即可进入。登录后在「设备」页填设备IP地址（`192.168.1.x`，设备IP地址在设备的设置页右上角，端口留空即用默认 32342），点 **保存并连接** 即可。之后推图/播放都不用再碰启动参数。
 
 密码在「设备」页的「访问密码」卡片修改；改完当前浏览器自动保持登录，其他浏览器需用新密码重新登录。
 
@@ -58,8 +58,8 @@ curl 'http://nas:8080/api/status?token=<token>'
 也可以把地址作为启动初值（页面保存过的值优先于它）：
 
 ```bash
-node src/index.js --device 192.168.1.100 --web 8080
-DEVICE_IP=192.168.1.100 WEB_PORT=8080 node src/index.js
+node src/index.js --device 192.168.1.x --web 8080
+DEVICE_IP=192.168.1.x WEB_PORT=8080 node src/index.js
 ```
 
 把推送与播放：
@@ -104,7 +104,7 @@ data/
 | --- | --- |
 | `POST /api/login` | 请求体 `{"password":"密码"}`；校验通过后设置 `inkpush_session` 会话 Cookie（HttpOnly、SameSite=Lax，30 天） |
 | `GET /api/config` | 当前生效的设备地址、来源（`file`/`startup`/`none`）、默认端口、配置文件路径、`authToken` |
-| `POST /api/config` | 请求体 `{"device":"192.168.1.100:32342"}`；校验通过即保存到 `data/config.json` 并切换目标设备 |
+| `POST /api/config` | 请求体 `{"device":"192.168.1.x:32342"}`；校验通过即保存到 `data/config.json` 并切换目标设备 |
 | `POST /api/password` | 请求体 `{"password":"新密码"}`（6～128 位）；需登录会话，更新密码与 API 令牌并落盘，返回新 `token` |
 | `POST /api/connect` | 强制重连当前地址并返回设备摘要（页面「保存并连接」用它验证配置是否真的通） |
 | `GET /api/status` | 连接状态 + 电量/充电/RSSI |
@@ -253,7 +253,7 @@ node scripts/build-life-guide.mjs <HowToLiveBetter>/book
 
 设备地址有三种给法，优先级 **页面保存的值 > 启动参数 > 环境变量**：
 
-1. **页面**（推荐）：`http://nas:8080/` → 「设备连接」→ 填入 `192.168.1.100` 或 `192.168.1.100:32342` → 保存。落盘位置默认 `./data/config.json`，可用 `CONFIG_FILE` 改。
+1. **页面**（推荐）：`http://nas:8080/` → 「设备连接」→ 填入 `192.168.1.x` 或 `192.168.1.x:32342` → 保存。落盘位置默认 `./data/config.json`，可用 `CONFIG_FILE` 改。
 2. `--device / --port`（命令行）
 3. `DEVICE_IP / DEVICE_PORT`（环境变量，适合 systemd/pm2）
 
